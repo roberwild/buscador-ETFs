@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Lynstone';
+  src: url('/fonts/Lynstone-Book.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Lynstone';
+  src: url('/fonts/Lynstone-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Lato';
+  src: url('/fonts/Lato-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --primary-red: #D64B3C;
+  --dark-gray: #333333;
+  --light-gray: #F5F5F5;
+  --link-blue: #0066CC;
+}
+
+body {
+  font-family: 'Lato', sans-serif;
+  color: var(--dark-gray);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Lynstone', sans-serif;
+} 
