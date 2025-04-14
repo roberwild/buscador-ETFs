@@ -31,14 +31,14 @@ export default function ThemeProvider({
     setTheme(theme === 'light' ? 'dark' : 'light')
   }
 
-  // Inicializar tema desde localStorage o preferencia del sistema
+  // Inicializar tema desde localStorage, pero siempre usar 'light' como predeterminado
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as Theme | null
     if (storedTheme) {
       setTheme(storedTheme)
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark')
     }
+    // Ya no usamos la preferencia del sistema para el tema inicial
+    // siempre será 'light' por defecto
   }, [])
 
   // Aplicar clase dark al html cuando cambia el tema
