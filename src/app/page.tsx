@@ -59,7 +59,8 @@ export default function Home() {
       setVisibleColumns(prev => prev.filter(id => 
         id !== 'compartment_code' && 
         id !== 'implicit_advisory' && 
-        id !== 'explicit_advisory'
+        id !== 'explicit_advisory' &&
+        id !== 'currency'
       ));
     } else {
       // Si cambia a fondos, incluir compartment_code si no está ya incluido
@@ -79,6 +80,11 @@ export default function Home() {
         // Comprobar y añadir explicit_advisory si es necesario
         if (!prev.includes('explicit_advisory') && DEFAULT_COLUMNS.find(col => col.id === 'explicit_advisory')?.visible) {
           newColumns.push('explicit_advisory');
+        }
+        
+        // Comprobar y añadir currency si es necesario
+        if (!prev.includes('currency') && DEFAULT_COLUMNS.find(col => col.id === 'currency')?.visible) {
+          newColumns.push('currency');
         }
         
         return newColumns;
@@ -148,7 +154,8 @@ export default function Home() {
             if (activeTab === 'etf-y-etc' && (
                 col.id === 'compartment_code' || 
                 col.id === 'implicit_advisory' || 
-                col.id === 'explicit_advisory'
+                col.id === 'explicit_advisory' ||
+                col.id === 'currency'
               )) return false;
             return true;
           })
@@ -678,7 +685,8 @@ export default function Home() {
                                 if (activeTab === 'etf-y-etc' && (
                                     column.id === 'compartment_code' || 
                                     column.id === 'implicit_advisory' || 
-                                    column.id === 'explicit_advisory'
+                                    column.id === 'explicit_advisory' ||
+                                    column.id === 'currency'
                                   )) return false;
                                 
                                 return true;
@@ -728,7 +736,7 @@ export default function Home() {
             )}
 
             {/* Contenido principal */}
-            <div className="flex-1 overflow-x-auto">
+            <div className="flex-1">
               <FundTable 
                 isinSearch={isinSearch}
                 selectedCategories={selectedCategories}
