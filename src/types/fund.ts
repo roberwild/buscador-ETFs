@@ -30,4 +30,5 @@ export interface Fund {
   maturity_range?: string; // Rango de vencimientos para ETFs de renta fija
   dividend_policy: string; // "C" (Acumulación) o "D" (Distribución)
   replication_type?: string; // Tipo de réplica: "Física" o "Sintética" para ETFs
+  req?: string; // Valor de riesgo REQ
 } 

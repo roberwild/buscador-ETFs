@@ -21,7 +21,8 @@ export type ColumnId =
   | 'maturity_range'
   | 'rating'
   | 'dividend_policy'
-  | 'replication_type';
+  | 'replication_type'
+  | 'req';
 
 export interface ColumnConfig {
   id: ColumnId;
@@ -53,6 +54,7 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'currency', title: 'Divisa', visible: false },
   { id: 'hedge', title: 'Hedge', visible: false },
   { id: 'risk_level', title: 'Riesgo', visible: true },
+  { id: 'req', title: 'REQ', visible: false },
   { id: 'dividend_policy', title: 'Política de dividendos', visible: true },
   { id: 'replication_type', title: 'Tipo de Réplica', visible: false },
   { id: 'ytd_return', title: 'Rentabilidad', subTitle: '2025', visible: true },
@@ -518,6 +520,14 @@ export function FundTable({
                           <td key={column.id} className="px-4 py-4 text-center">
                             <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.replication_type || '-'}
+                            </div>
+                          </td>
+                        );
+                      case 'req':
+                        return (
+                          <td key={column.id} className="px-4 py-4 text-center">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
+                              {fund.req}
                             </div>
                           </td>
                         );

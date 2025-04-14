@@ -230,6 +230,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         maturity_range: row['Rango de vencimientos'] || '',
         dividend_policy: row['Política de dividendos'] || '',
         replication_type: row['Tipo de Réplica'] || '',
+        req: row['REQ'] || '',
       };
     });
   } else if (dataSource === 'fondos-indexados') {
@@ -277,7 +278,8 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         focus_list: normalizeFocusList(row['Focus List']),
         rating: row['Calificación'] || '',
         maturity_range: row['Rango de vencimientos'] || '',
-        dividend_policy: row['Politica de dividendos'] || ''
+        dividend_policy: row['Politica de dividendos'] || '',
+        req: row['REQ'] || '',
       };
     });
   } else {
@@ -325,7 +327,8 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         focus_list: normalizeFocusList(row['Focus List']),
         rating: row['Calificación'] || '',
         maturity_range: row['Rango de vencimientos'] || '',
-        dividend_policy: row['Politica de dividendos'] || ''
+        dividend_policy: row['Politica de dividendos'] || '',
+        req: row['REQ'] || '',
       };
     });
   }
