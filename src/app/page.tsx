@@ -46,6 +46,20 @@ export default function Home() {
     setSelectedCurrency('')
     setSelectedRiskLevels([])
     setFocusListFilter('Todos')
+    
+    // Actualizar columnas visibles según la pestaña seleccionada
+    if (tab === 'etf-y-etc') {
+      // Si cambia a ETFs, asegurarse de que compartment_code no esté visible
+      setVisibleColumns(prev => prev.filter(id => id !== 'compartment_code'));
+    } else {
+      // Si cambia a fondos, incluir compartment_code si no está ya incluido
+      setVisibleColumns(prev => {
+        if (!prev.includes('compartment_code') && DEFAULT_COLUMNS.find(col => col.id === 'compartment_code')?.visible) {
+          return [...prev, 'compartment_code'];
+        }
+        return prev;
+      });
+    }
   }
 
   const handleCategoryChange = (category: string) => {
@@ -102,9 +116,14 @@ export default function Home() {
   const handleToggleAllColumns = (show: boolean) => {
     if (show) {
       // Mostrar todas las columnas excepto factsheet_url
+      // y compartment_code si estamos en ETFs
       setVisibleColumns(
         DEFAULT_COLUMNS
-          .filter(col => col.id !== 'factsheet_url')
+          .filter(col => {
+            if (col.id === 'factsheet_url') return false;
+            if (col.id === 'compartment_code' && activeTab === 'etf-y-etc') return false;
+            return true;
+          })
           .map(col => col.id)
       );
     } else {
@@ -507,7 +526,15 @@ export default function Home() {
                           </div>
                           <div className="space-y-2">
                             {DEFAULT_COLUMNS
-                              .filter(column => column.id !== 'factsheet_url')
+                              .filter(column => {
+                                // No mostrar URL Ficha Comercial
+                                if (column.id === 'factsheet_url') return false;
+                                
+                                // No mostrar Código de compartimento en ETFs
+                                if (column.id === 'compartment_code' && activeTab === 'etf-y-etc') return false;
+                                
+                                return true;
+                              })
                               .map(column => (
                               <label key={column.id} className="flex items-center justify-between">
                                 <span className="text-sm">{column.title} {column.subTitle ? `(${column.subTitle})` : ''}</span>

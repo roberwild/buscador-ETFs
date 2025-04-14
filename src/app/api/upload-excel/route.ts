@@ -40,7 +40,20 @@ export async function POST(request: Request) {
         strip: true
       }
       
-      const csvContent = XLSX.utils.sheet_to_csv(worksheet, csvOptions)
+      let csvContent = XLSX.utils.sheet_to_csv(worksheet, csvOptions)
+      
+      // Corregir el problema de la columna vacía al inicio
+      if (sheetName.toLowerCase().includes('fondos indexados')) {
+        // Eliminar la primera columna vacía (que aparece como ';')
+        csvContent = csvContent.replace(/^;/gm, '')
+        
+        // Corregir específicamente la línea de encabezados eliminando "Codigo de Compartimento;"
+        const lines = csvContent.split('\n');
+        if (lines.length > 0) {
+          lines[0] = lines[0].replace(/^Codigo de Compartimento;/, '');
+          csvContent = lines.join('\n');
+        }
+      }
       
       // Nombre del archivo: nombre de la hoja sin espacios, en minúsculas y sin acentos
       const normalizedSheetName = normalizeText(sheetName.toLowerCase()).replace(/\s+/g, '-')

@@ -6,6 +6,7 @@ export interface Fund {
   currency: string;
   category: string;
   subcategory: string;
+  compartment_code: string; // Código de compartimento
   management_fee: number;
   success_fee: number;
   min_investment: number;

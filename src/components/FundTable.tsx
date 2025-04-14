@@ -11,7 +11,8 @@ export type ColumnId =
   | 'five_year_return' 
   | 'management_fee' 
   | 'focus_list'
-  | 'factsheet_url';
+  | 'factsheet_url'
+  | 'compartment_code';
 
 export interface ColumnConfig {
   id: ColumnId;
@@ -40,6 +41,7 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'management_fee', title: 'Comisiones totales (TER)', visible: true },
   { id: 'focus_list', title: 'Focus List', visible: true },
   { id: 'factsheet_url', title: 'URL Ficha Comercial', visible: false },
+  { id: 'compartment_code', title: 'Código de compartimento', visible: false },
 ];
 
 // Componente para el modal de aviso cuando no hay ficha comercial
@@ -392,6 +394,14 @@ export function FundTable({
                 <td className="px-4 py-4 text-center">
                   <div className="text-sm font-medium text-gray-900">
                     {fund.focus_list === 'Y' ? 'Sí' : 'No'}
+                  </div>
+                </td>
+              )}
+              
+              {columns.find(col => col.id === 'compartment_code')?.visible && (
+                <td className="px-4 py-4 text-center">
+                  <div className="text-sm font-medium text-gray-900">
+                    {fund.compartment_code}
                   </div>
                 </td>
               )}
