@@ -87,6 +87,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
       risk_level: mapRiskLevel(row['REQ'] || row['Riesgo'] || ''),
       morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
       available_for_implicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
+      focus_list: row['Focus List'] || 'N', // Añadimos el campo Focus List
     }));
   } else {
     // Mapeo original para fondos de gestión activa u otras categorías
@@ -111,6 +112,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
       risk_level: mapRiskLevel(row['REQ']),
       morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
       available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
+      focus_list: row['Focus List'] || 'N', // Añadimos el campo por consistencia
     }))
     .filter(fund => fund.available_for_implicit_advisory);
   }

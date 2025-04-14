@@ -16,6 +16,7 @@ export default function Home() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedCurrency, setSelectedCurrency] = useState('');
   const [selectedRiskLevels, setSelectedRiskLevels] = useState<RiskLevel[]>([]);
+  const [focusListFilter, setFocusListFilter] = useState('Todos');
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<ColumnId[]>(
@@ -28,6 +29,7 @@ export default function Home() {
     category: true,
     risk: true,
     currency: true,
+    focusList: true,
     columns: true
   });
 
@@ -43,6 +45,7 @@ export default function Home() {
     setSelectedCategories([])
     setSelectedCurrency('')
     setSelectedRiskLevels([])
+    setFocusListFilter('Todos')
   }
 
   const handleCategoryChange = (category: string) => {
@@ -352,7 +355,7 @@ export default function Home() {
                       )}
                     </div>
 
-                    {/* Divisa - con acordeón */}
+                    {/* Divisa con acordeón */}
                     <div className="mb-4 border-b pb-2">
                       <div 
                         className="flex justify-between items-center cursor-pointer py-2"
@@ -364,19 +367,102 @@ export default function Home() {
                         </button>
                       </div>
                       {expandedSections.currency && (
-                        <div className="mt-2 pb-2">
-                          <select
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                            value={selectedCurrency}
-                            onChange={(e) => setSelectedCurrency(e.target.value)}
-                          >
-                            <option value="">Todas</option>
-                            <option value="EUR">EUR</option>
-                            <option value="USD">USD</option>
-                            <option value="GBP">GBP</option>
-                            <option value="JPY">JPY</option>
-                            <option value="CHF">CHF</option>
-                          </select>
+                        <div className="mt-2 space-y-2 pb-2">
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="currency-all"
+                              name="currency"
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              checked={selectedCurrency === ''}
+                              onChange={() => setSelectedCurrency('')}
+                            />
+                            <label htmlFor="currency-all" className="ml-2 block text-sm text-gray-700">
+                              Todas
+                            </label>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="currency-eur"
+                              name="currency"
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              checked={selectedCurrency === 'EUR'}
+                              onChange={() => setSelectedCurrency('EUR')}
+                            />
+                            <label htmlFor="currency-eur" className="ml-2 block text-sm text-gray-700">
+                              EUR
+                            </label>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="currency-usd"
+                              name="currency"
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              checked={selectedCurrency === 'USD'}
+                              onChange={() => setSelectedCurrency('USD')}
+                            />
+                            <label htmlFor="currency-usd" className="ml-2 block text-sm text-gray-700">
+                              USD
+                            </label>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Filtro Focus List - Disponible en todas las pestañas */}
+                    <div className="mb-4 border-b pb-2">
+                      <div 
+                        className="flex justify-between items-center cursor-pointer py-2"
+                        onClick={() => toggleSection('focusList')}
+                      >
+                        <h3 className="font-medium">Focus List</h3>
+                        <button className="text-gray-500">
+                          {expandedSections.focusList ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                      </div>
+                      {expandedSections.focusList && (
+                        <div className="mt-2 space-y-2 pb-2">
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="focus-all"
+                              name="focus"
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              checked={focusListFilter === 'Todos'}
+                              onChange={() => setFocusListFilter('Todos')}
+                            />
+                            <label htmlFor="focus-all" className="ml-2 block text-sm text-gray-700">
+                              Todos
+                            </label>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="focus-yes"
+                              name="focus"
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              checked={focusListFilter === 'Y'}
+                              onChange={() => setFocusListFilter('Y')}
+                            />
+                            <label htmlFor="focus-yes" className="ml-2 block text-sm text-gray-700">
+                              Sí
+                            </label>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="focus-no"
+                              name="focus"
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              checked={focusListFilter === 'N'}
+                              onChange={() => setFocusListFilter('N')}
+                            />
+                            <label htmlFor="focus-no" className="ml-2 block text-sm text-gray-700">
+                              No
+                            </label>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -468,6 +554,7 @@ export default function Home() {
                 selectedRiskLevels={selectedRiskLevels}
                 dataSource={activeTab}
                 visibleColumns={visibleColumns}
+                focusListFilter={focusListFilter}
               />
             </div>
           </div>

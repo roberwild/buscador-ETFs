@@ -10,7 +10,8 @@ export type ColumnId =
   | 'three_year_return' 
   | 'five_year_return' 
   | 'management_fee' 
-  | 'morningstar_rating';
+  | 'morningstar_rating'
+  | 'focus_list';
 
 export interface ColumnConfig {
   id: ColumnId;
@@ -26,6 +27,7 @@ interface FundTableProps {
   selectedRiskLevels: RiskLevel[];
   dataSource?: string;
   visibleColumns?: ColumnId[];
+  focusListFilter?: string;
 }
 
 export const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -37,6 +39,7 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'five_year_return', title: 'Rentabilidad', subTitle: '5 años', visible: true },
   { id: 'management_fee', title: 'Comisiones totales (TER)', visible: true },
   { id: 'morningstar_rating', title: 'Rating Morningstar', visible: true },
+  { id: 'focus_list', title: 'Focus List', visible: true },
 ];
 
 export function FundTable({ 
@@ -45,7 +48,8 @@ export function FundTable({
   selectedCurrency,
   selectedRiskLevels,
   dataSource = 'fondos-gestion-activa',
-  visibleColumns
+  visibleColumns,
+  focusListFilter = 'Todos'
 }: FundTableProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('ytd_return');
@@ -53,10 +57,12 @@ export function FundTable({
   // Determinar qué columnas mostrar
   const columns = DEFAULT_COLUMNS.map(col => ({
     ...col,
+    // Ya no condicionamos la visibilidad de Focus List al tipo de datos
     visible: visibleColumns ? visibleColumns.includes(col.id) : col.visible
   }));
 
-  const { funds, total, totalPages, isLoading, error } = useFunds({
+  // Obtenemos los fondos
+  const { funds: allFunds, total: totalAll, totalPages, isLoading, error } = useFunds({
     page,
     limit: 10,
     search: isinSearch,
@@ -67,10 +73,20 @@ export function FundTable({
     dataSource
   });
 
+  // Filtramos por focus list si es necesario
+  const funds = allFunds.filter(fund => {
+    if (focusListFilter === 'Todos') {
+      return true;
+    }
+    return fund.focus_list === focusListFilter;
+  });
+
+  const total = focusListFilter !== 'Todos' ? funds.length : totalAll;
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource]);
+  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter]);
 
   if (error) {
     return (
@@ -211,6 +227,14 @@ export function FundTable({
                   </div>
                 </td>
               )}
+
+              {columns.find(col => col.id === 'focus_list')?.visible && (
+                <td className="px-4 py-4 text-center">
+                  <div className="text-sm font-medium text-gray-900">
+                    {fund.focus_list === 'Y' ? 'Sí' : 'No'}
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -249,38 +273,45 @@ export function FundTable({
                 className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
               >
                 <span className="sr-only">Anterior</span>
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
-                </svg>
+                &lt;
               </button>
-              {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                const pageNum = page + i - 2;
-                if (pageNum > 0 && pageNum <= totalPages) {
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setPage(pageNum)}
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                        page === pageNum
-                          ? 'z-10 bg-[#D1472C] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D1472C]'
-                          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
+
+              {/* Páginas centrales */}
+              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                let pageNum;
+                // Mostrar 5 páginas centradas en la actual si es posible
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (page <= 3) {
+                  pageNum = i + 1;
+                } else if (page >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = page - 2 + i;
                 }
-                return null;
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                      page === pageNum
+                        ? 'z-10 bg-gray-900 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-700'
+                        : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
               })}
+
               <button
                 onClick={() => setPage(page < totalPages ? page + 1 : totalPages)}
                 disabled={page === totalPages}
                 className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
               >
                 <span className="sr-only">Siguiente</span>
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                </svg>
+                &gt;
               </button>
             </nav>
           </div>

@@ -22,4 +22,5 @@ export interface Fund {
   morningstar_rating: number; // 0-5 stars
   sharpe_ratio?: number; // Opcional ya que no todos los fondos podrían tenerlo
   available_for_implicit_advisory: boolean;
+  focus_list: string; // "Y" o "N"
 } 
