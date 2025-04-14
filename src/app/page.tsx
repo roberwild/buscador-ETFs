@@ -17,6 +17,8 @@ export default function Home() {
   const [selectedCurrency, setSelectedCurrency] = useState('');
   const [selectedRiskLevels, setSelectedRiskLevels] = useState<RiskLevel[]>([]);
   const [focusListFilter, setFocusListFilter] = useState('Todos');
+  const [implicitAdvisoryFilter, setImplicitAdvisoryFilter] = useState('Todos');
+  const [explicitAdvisoryFilter, setExplicitAdvisoryFilter] = useState('Todos');
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<ColumnId[]>(
@@ -30,6 +32,8 @@ export default function Home() {
     risk: true,
     currency: true,
     focusList: true,
+    implicitAdvisory: true,
+    explicitAdvisory: true,
     columns: true
   });
 
@@ -46,18 +50,38 @@ export default function Home() {
     setSelectedCurrency('')
     setSelectedRiskLevels([])
     setFocusListFilter('Todos')
+    setImplicitAdvisoryFilter('Todos')
+    setExplicitAdvisoryFilter('Todos')
     
     // Actualizar columnas visibles según la pestaña seleccionada
     if (tab === 'etf-y-etc') {
-      // Si cambia a ETFs, asegurarse de que compartment_code no esté visible
-      setVisibleColumns(prev => prev.filter(id => id !== 'compartment_code'));
+      // Si cambia a ETFs, asegurarse de que compartment_code y columnas de asesoramiento no estén visibles
+      setVisibleColumns(prev => prev.filter(id => 
+        id !== 'compartment_code' && 
+        id !== 'implicit_advisory' && 
+        id !== 'explicit_advisory'
+      ));
     } else {
       // Si cambia a fondos, incluir compartment_code si no está ya incluido
       setVisibleColumns(prev => {
+        let newColumns = [...prev];
+        
+        // Comprobar y añadir compartment_code si es necesario
         if (!prev.includes('compartment_code') && DEFAULT_COLUMNS.find(col => col.id === 'compartment_code')?.visible) {
-          return [...prev, 'compartment_code'];
+          newColumns.push('compartment_code');
         }
-        return prev;
+        
+        // Comprobar y añadir implicit_advisory si es necesario
+        if (!prev.includes('implicit_advisory') && DEFAULT_COLUMNS.find(col => col.id === 'implicit_advisory')?.visible) {
+          newColumns.push('implicit_advisory');
+        }
+        
+        // Comprobar y añadir explicit_advisory si es necesario
+        if (!prev.includes('explicit_advisory') && DEFAULT_COLUMNS.find(col => col.id === 'explicit_advisory')?.visible) {
+          newColumns.push('explicit_advisory');
+        }
+        
+        return newColumns;
       });
     }
   }
@@ -116,12 +140,16 @@ export default function Home() {
   const handleToggleAllColumns = (show: boolean) => {
     if (show) {
       // Mostrar todas las columnas excepto factsheet_url
-      // y compartment_code si estamos en ETFs
+      // y compartment_code/asesoramiento si estamos en ETFs
       setVisibleColumns(
         DEFAULT_COLUMNS
           .filter(col => {
             if (col.id === 'factsheet_url') return false;
-            if (col.id === 'compartment_code' && activeTab === 'etf-y-etc') return false;
+            if (activeTab === 'etf-y-etc' && (
+                col.id === 'compartment_code' || 
+                col.id === 'implicit_advisory' || 
+                col.id === 'explicit_advisory'
+              )) return false;
             return true;
           })
           .map(col => col.id)
@@ -491,6 +519,122 @@ export default function Home() {
                       )}
                     </div>
 
+                    {/* Filtro Disponible para asesoramiento con cobro implícito - No disponible para ETFs */}
+                    {activeTab !== 'etf-y-etc' && (
+                      <div className="mb-4 border-b pb-2">
+                        <div 
+                          className="flex justify-between items-center cursor-pointer py-2"
+                          onClick={() => toggleSection('implicitAdvisory')}
+                        >
+                          <h3 className="font-medium">Asesoramiento con cobro implícito</h3>
+                          <button className="text-gray-500">
+                            {expandedSections.implicitAdvisory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
+                        </div>
+                        {expandedSections.implicitAdvisory && (
+                          <div className="mt-2 space-y-2 pb-2">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="implicit-all"
+                                name="implicit-advisory"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={implicitAdvisoryFilter === 'Todos'}
+                                onChange={() => setImplicitAdvisoryFilter('Todos')}
+                              />
+                              <label htmlFor="implicit-all" className="ml-2 block text-sm text-gray-700">
+                                Todos
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="implicit-yes"
+                                name="implicit-advisory"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={implicitAdvisoryFilter === 'Sí'}
+                                onChange={() => setImplicitAdvisoryFilter('Sí')}
+                              />
+                              <label htmlFor="implicit-yes" className="ml-2 block text-sm text-gray-700">
+                                Sí
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="implicit-no"
+                                name="implicit-advisory"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={implicitAdvisoryFilter === 'No'}
+                                onChange={() => setImplicitAdvisoryFilter('No')}
+                              />
+                              <label htmlFor="implicit-no" className="ml-2 block text-sm text-gray-700">
+                                No
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Filtro Disponible para asesoramiento con cobro explícito - No disponible para ETFs */}
+                    {activeTab !== 'etf-y-etc' && (
+                      <div className="mb-4 border-b pb-2">
+                        <div 
+                          className="flex justify-between items-center cursor-pointer py-2"
+                          onClick={() => toggleSection('explicitAdvisory')}
+                        >
+                          <h3 className="font-medium">Asesoramiento con cobro explícito</h3>
+                          <button className="text-gray-500">
+                            {expandedSections.explicitAdvisory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
+                        </div>
+                        {expandedSections.explicitAdvisory && (
+                          <div className="mt-2 space-y-2 pb-2">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="explicit-all"
+                                name="explicit-advisory"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={explicitAdvisoryFilter === 'Todos'}
+                                onChange={() => setExplicitAdvisoryFilter('Todos')}
+                              />
+                              <label htmlFor="explicit-all" className="ml-2 block text-sm text-gray-700">
+                                Todos
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="explicit-yes"
+                                name="explicit-advisory"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={explicitAdvisoryFilter === 'Sí'}
+                                onChange={() => setExplicitAdvisoryFilter('Sí')}
+                              />
+                              <label htmlFor="explicit-yes" className="ml-2 block text-sm text-gray-700">
+                                Sí
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="explicit-no"
+                                name="explicit-advisory"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={explicitAdvisoryFilter === 'No'}
+                                onChange={() => setExplicitAdvisoryFilter('No')}
+                              />
+                              <label htmlFor="explicit-no" className="ml-2 block text-sm text-gray-700">
+                                No
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Selector de columnas visibles - con acordeón */}
                     <div className="mb-4">
                       <div 
@@ -530,8 +674,12 @@ export default function Home() {
                                 // No mostrar URL Ficha Comercial
                                 if (column.id === 'factsheet_url') return false;
                                 
-                                // No mostrar Código de compartimento en ETFs
-                                if (column.id === 'compartment_code' && activeTab === 'etf-y-etc') return false;
+                                // No mostrar columnas específicas en ETFs
+                                if (activeTab === 'etf-y-etc' && (
+                                    column.id === 'compartment_code' || 
+                                    column.id === 'implicit_advisory' || 
+                                    column.id === 'explicit_advisory'
+                                  )) return false;
                                 
                                 return true;
                               })
@@ -589,6 +737,8 @@ export default function Home() {
                 dataSource={activeTab}
                 visibleColumns={visibleColumns}
                 focusListFilter={focusListFilter}
+                implicitAdvisoryFilter={implicitAdvisoryFilter}
+                explicitAdvisoryFilter={explicitAdvisoryFilter}
               />
             </div>
           </div>

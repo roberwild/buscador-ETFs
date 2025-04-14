@@ -12,7 +12,9 @@ export type ColumnId =
   | 'management_fee' 
   | 'focus_list'
   | 'factsheet_url'
-  | 'compartment_code';
+  | 'compartment_code'
+  | 'implicit_advisory'
+  | 'explicit_advisory';
 
 export interface ColumnConfig {
   id: ColumnId;
@@ -29,10 +31,14 @@ interface FundTableProps {
   dataSource?: string;
   visibleColumns?: ColumnId[];
   focusListFilter?: string;
+  implicitAdvisoryFilter?: string;
+  explicitAdvisoryFilter?: string;
 }
 
 export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'info', title: 'Fondo', visible: true },
+  { id: 'implicit_advisory', title: 'Disponible para asesoramiento con cobro implícito', visible: false },
+  { id: 'explicit_advisory', title: 'Disponible para asesoramiento con cobro explícito', visible: false },
   { id: 'risk_level', title: 'Riesgo', visible: true },
   { id: 'ytd_return', title: 'Rentabilidad', subTitle: '2025', visible: true },
   { id: 'one_year_return', title: 'Rentabilidad', subTitle: '1 año', visible: true },
@@ -185,7 +191,9 @@ export function FundTable({
   selectedRiskLevels,
   dataSource = 'fondos-gestion-activa',
   visibleColumns,
-  focusListFilter = 'Todos'
+  focusListFilter = 'Todos',
+  implicitAdvisoryFilter = 'Todos',
+  explicitAdvisoryFilter = 'Todos'
 }: FundTableProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('ytd_return');
@@ -210,13 +218,15 @@ export function FundTable({
     sortBy,
     riskLevels: selectedRiskLevels.join(','),
     dataSource,
-    focusListFilter
+    focusListFilter,
+    implicitAdvisoryFilter,
+    explicitAdvisoryFilter
   });
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter]);
+  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter]);
 
   // Función para manejar el clic en el nombre del fondo
   const handleFundNameClick = (fund: Fund) => {
@@ -326,85 +336,107 @@ export function FundTable({
         <tbody className="divide-y divide-gray-100">
           {funds.map((fund, index) => (
             <tr key={fund.isin} className={index % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}>
-              {columns.find(col => col.id === 'info')?.visible && (
-                <td className="px-4 py-4 w-[440px] min-w-[440px] max-w-[440px]">
-                  <div className="space-y-0.5 text-left">
-                    <div className="flex justify-between items-start">
-                      <button 
-                        onClick={() => handleFundNameClick(fund)}
-                        className="text-[#D1472C] underline font-semibold block text-base text-left cursor-pointer"
-                        style={{ textAlign: 'left' }}
-                      >
-                        {fund.name}
-                      </button>
-                      {/* Botón KIID unificado para todos los tipos de fondos */}
-                      <button 
-                        onClick={(e) => handleKiidClick(e, fund)}
-                        className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1 ml-2 flex-shrink-0 cursor-pointer"
-                      >
-                        KIID
-                      </button>
-                    </div>
-                    <div className="text-sm text-gray-900 text-left"><span className="font-bold">ISIN:</span> <span className="font-bold">{fund.isin}</span></div>
-                    <div className="text-sm text-gray-500 text-left">{fund.category}</div>
-                    <div className="text-sm text-gray-500 text-left">{fund.management_company}</div>
-                  </div>
-                </td>
-              )}
-              
-              {columns.find(col => col.id === 'risk_level')?.visible && (
-                <td className="px-4 py-4 text-center">
-                  <div className="text-sm font-medium">
-                    {fund.risk_level}
-                  </div>
-                </td>
-              )}
-              
-              {columns.find(col => col.id === 'ytd_return')?.visible && (
-                <td className="px-4 py-4 text-center">
-                  <div className="text-sm font-medium text-gray-900">{fund.ytd_return.toFixed(2)}%</div>
-                </td>
-              )}
-              
-              {columns.find(col => col.id === 'one_year_return')?.visible && (
-                <td className="px-4 py-4 text-center">
-                  <div className="text-sm font-medium text-gray-900">{fund.one_year_return.toFixed(2)}%</div>
-                </td>
-              )}
-              
-              {columns.find(col => col.id === 'three_year_return')?.visible && (
-                <td className="px-4 py-4 text-center">
-                  <div className="text-sm font-medium text-gray-900">{fund.three_year_return.toFixed(2)}%</div>
-                </td>
-              )}
-              
-              {columns.find(col => col.id === 'five_year_return')?.visible && (
-                <td className="px-4 py-4 text-center">
-                  <div className="text-sm font-medium text-gray-900">{fund.five_year_return.toFixed(2)}%</div>
-                </td>
-              )}
-              
-              {columns.find(col => col.id === 'management_fee')?.visible && (
-                <td className="px-4 py-4 text-center">
-                  <div className="text-sm font-medium text-gray-900">{fund.management_fee.toFixed(2)}%</div>
-                </td>
-              )}
-
-              {columns.find(col => col.id === 'focus_list')?.visible && (
-                <td className="px-4 py-4 text-center">
-                  <div className="text-sm font-medium text-gray-900">
-                    {fund.focus_list === 'Y' ? 'Sí' : 'No'}
-                  </div>
-                </td>
-              )}
-              
-              {columns.find(col => col.id === 'compartment_code')?.visible && (
-                <td className="px-4 py-4 text-center">
-                  <div className="text-sm font-medium text-gray-900">
-                    {fund.compartment_code}
-                  </div>
-                </td>
-              )}
+              {columns.filter(col => col.visible).map(column => {
+                switch(column.id) {
+                  case 'info':
+                    return (
+                      <td key={column.id} className="px-4 py-4 w-[440px] min-w-[440px] max-w-[440px]">
+                        <div className="space-y-0.5 text-left">
+                          <div className="flex justify-between items-start">
+                            <button 
+                              onClick={() => handleFundNameClick(fund)}
+                              className="text-[#D1472C] underline font-semibold block text-base text-left cursor-pointer"
+                              style={{ textAlign: 'left' }}
+                            >
+                              {fund.name}
+                            </button>
+                            <button 
+                              onClick={(e) => handleKiidClick(e, fund)}
+                              className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1 ml-2 flex-shrink-0 cursor-pointer"
+                            >
+                              KIID
+                            </button>
+                          </div>
+                          <div className="text-sm text-gray-900 text-left"><span className="font-bold">ISIN:</span> <span className="font-bold">{fund.isin}</span></div>
+                          <div className="text-sm text-gray-500 text-left">{fund.category}</div>
+                          <div className="text-sm text-gray-500 text-left">{fund.management_company}</div>
+                        </div>
+                      </td>
+                    );
+                  case 'risk_level':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium">
+                          {fund.risk_level}
+                        </div>
+                      </td>
+                    );
+                  case 'ytd_return':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium text-gray-900">{fund.ytd_return.toFixed(2)}%</div>
+                      </td>
+                    );
+                  case 'one_year_return':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium text-gray-900">{fund.one_year_return.toFixed(2)}%</div>
+                      </td>
+                    );
+                  case 'three_year_return':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium text-gray-900">{fund.three_year_return.toFixed(2)}%</div>
+                      </td>
+                    );
+                  case 'five_year_return':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium text-gray-900">{fund.five_year_return.toFixed(2)}%</div>
+                      </td>
+                    );
+                  case 'management_fee':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium text-gray-900">{fund.management_fee.toFixed(2)}%</div>
+                      </td>
+                    );
+                  case 'focus_list':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium text-gray-900">
+                          {fund.focus_list === 'Y' ? 'Sí' : 'No'}
+                        </div>
+                      </td>
+                    );
+                  case 'implicit_advisory':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium text-gray-900">
+                          {fund.available_for_implicit_advisory ? 'Sí' : 'No'}
+                        </div>
+                      </td>
+                    );
+                  case 'explicit_advisory':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium text-gray-900">
+                          {fund.available_for_explicit_advisory ? 'Sí' : 'No'}
+                        </div>
+                      </td>
+                    );
+                  case 'compartment_code':
+                    return (
+                      <td key={column.id} className="px-4 py-4 text-center">
+                        <div className="text-sm font-medium text-gray-900">
+                          {fund.compartment_code}
+                        </div>
+                      </td>
+                    );
+                  default:
+                    return null;
+                }
+              })}
             </tr>
           ))}
         </tbody>

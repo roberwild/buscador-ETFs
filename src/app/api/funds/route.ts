@@ -204,6 +204,8 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         category: row['Categoria'] || row['Categoría Singular Bank'] || '',
         subcategory: row['Subcategoria'] || row['Categoría Morningstar'] || '',
         compartment_code: row['Código de compartimento'] || '',
+        available_for_implicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
+        available_for_explicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
         management_fee: parseNumericValue(row['Comisión Gestión'] || row['TER'] || row['Gastos corrientes (%)']),
         success_fee: parseNumericValue(row['Comisión Exito'] || '0'),
         min_investment: parseNumericValue(row['Mínimo Inicial'] || '0'),
@@ -218,7 +220,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         kiid_url: kiidUrl,
         risk_level: mapRiskLevel(row['REQ'] || row['Riesgo'] || ''),
         morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
-        available_for_implicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
         focus_list: focusList,
       };
     });
@@ -241,6 +242,8 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         category: row['Categoria SB'] || '',
         subcategory: row['Categoría Morningstar'] || '',
         compartment_code: row['Código de compartimento'] || '',
+        available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
+        available_for_explicit_advisory: row['Disponible para asesoramiento con cobro explícito'] === 'Y',
         management_fee: parseNumericValue(row['Comisión Gestión']),
         success_fee: parseNumericValue(row['Comisión Exito']),
         min_investment: parseNumericValue(row['Mínimo Inicial']),
@@ -255,7 +258,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         kiid_url: kiidUrl,
         risk_level: mapRiskLevel(row['REQ']),
         morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
-        available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
         focus_list: normalizeFocusList(row['Focus List']),
       };
     });
@@ -278,6 +280,8 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         category: row['Categoria SB'] || '',
         subcategory: row['Categoría Morningstar'] || '',
         compartment_code: row['Código de compartimento'] || '',
+        available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
+        available_for_explicit_advisory: row['Disponible para asesoramiento con cobro explícito'] === 'Y',
         management_fee: parseNumericValue(row['Comisión Gestión']),
         success_fee: parseNumericValue(row['Comisión Exito']),
         min_investment: parseNumericValue(row['Mínimo Inicial']),
@@ -292,7 +296,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         kiid_url: kiidUrl,
         risk_level: mapRiskLevel(row['REQ']),
         morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
-        available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
         focus_list: normalizeFocusList(row['Focus List']),
       };
     });
@@ -300,33 +303,35 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
 }
 
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const search = searchParams.get('search') || '';
+  const category = searchParams.get('category') || '';
+  const currency = searchParams.get('currency') || '';
+  const sortBy = searchParams.get('sortBy') || '';
+  const riskLevels = searchParams.get('riskLevels') || '';
+  const dataSource = searchParams.get('dataSource') || 'fondos-gestion-activa';
+  const focusListFilter = searchParams.get('focusListFilter') || 'Todos';
+  const implicitAdvisoryFilter = searchParams.get('implicitAdvisoryFilter') || 'Todos';
+  const explicitAdvisoryFilter = searchParams.get('explicitAdvisoryFilter') || 'Todos';
+
   try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
-    const category = searchParams.get('category') || '';
-    const currency = searchParams.get('currency') || '';
-    const sortBy = searchParams.get('sortBy') || 'ytd_return';
-    const riskLevels = searchParams.get('riskLevels') || '';
-    const dataSource = searchParams.get('dataSource') || 'fondos-gestion-activa';
-    const focusListFilter = searchParams.get('focusListFilter') || 'Todos';
+    // Obtener y procesar todos los fondos
+    let allFunds = await getFundsData(dataSource);
 
-    const funds = await getFundsData(dataSource);
-
-    // Aplicar filtros
-    let filteredFunds = funds;
-    
+    // Aplicar el filtro de búsqueda
     if (search) {
-      filteredFunds = filteredFunds.filter(fund => 
+      allFunds = allFunds.filter(fund => 
         fund.isin.toLowerCase() === search.toLowerCase()
       );
     }
 
+    // Aplicar filtro de categoría
     if (category) {
       const categories = category.split(',').filter(Boolean);
       if (categories.length > 0) {
-        filteredFunds = filteredFunds.filter(fund => 
+        allFunds = allFunds.filter(fund => 
           categories.some(cat => 
             fund.category.toLowerCase().startsWith(cat.toLowerCase())
           )
@@ -334,61 +339,49 @@ export async function GET(request: Request) {
       }
     }
 
+    // Aplicar filtro de divisa
     if (currency) {
-      filteredFunds = filteredFunds.filter(fund => 
+      allFunds = allFunds.filter(fund => 
         fund.currency.toLowerCase() === currency.toLowerCase()
       );
     }
 
+    // Aplicar filtro de nivel de riesgo
     if (riskLevels) {
       const selectedRiskLevels = riskLevels.split(',').filter(Boolean);
       if (selectedRiskLevels.length > 0) {
-        filteredFunds = filteredFunds.filter(fund => 
+        allFunds = allFunds.filter(fund => 
           selectedRiskLevels.includes(fund.risk_level)
         );
       }
     }
 
     // Aplicar filtro de Focus List
-    if (focusListFilter && focusListFilter !== 'Todos') {
-      console.log(`Filtrando por Focus List: "${focusListFilter}"`);
-      
-      // Contar cuántos registros tienen Y/N antes del filtrado
-      const countY = filteredFunds.filter(fund => fund.focus_list === 'Y').length;
-      const countN = filteredFunds.filter(fund => fund.focus_list === 'N').length;
-      console.log(`Antes del filtro: ${countY} registros con 'Y', ${countN} registros con 'N', Total: ${filteredFunds.length}`);
-      
-      filteredFunds = filteredFunds.filter(fund => {
-        // Normalizar el valor para comparaciones más robustas
-        const normalizedFocusList = (fund.focus_list || '').toString().trim().toUpperCase();
-        
-        // Log para cada fondo
-        console.log(`Evaluando: ISIN=${fund.isin}, focus_list="${fund.focus_list}" (normalizado: "${normalizedFocusList}")`);
-        
-        let include = false;
-        if (focusListFilter === 'Sí' || focusListFilter === 'Si') {
-          include = normalizedFocusList === 'Y';
-        } else if (focusListFilter === 'No') {
-          include = normalizedFocusList === 'N' || normalizedFocusList === '';
-        } else {
-          include = true;
-        }
-        
-        if (include) {
-          console.log(`  ✓ Incluido`);
-        } else {
-          console.log(`  ✗ Excluido`);
-        }
-        
-        return include;
-      });
-      
-      // Contar después del filtrado
-      console.log(`Después del filtro: ${filteredFunds.length} registros`);
+    if (focusListFilter !== 'Todos') {
+      const isInFocusList = focusListFilter === 'Sí';
+      allFunds = allFunds.filter(fund => 
+        (fund.focus_list === 'Y') === isInFocusList
+      );
+    }
+    
+    // Aplicar filtro de asesoramiento con cobro implícito
+    if (implicitAdvisoryFilter !== 'Todos') {
+      const isImplicitAdvisory = implicitAdvisoryFilter === 'Sí';
+      allFunds = allFunds.filter(fund => 
+        fund.available_for_implicit_advisory === isImplicitAdvisory
+      );
+    }
+    
+    // Aplicar filtro de asesoramiento con cobro explícito
+    if (explicitAdvisoryFilter !== 'Todos') {
+      const isExplicitAdvisory = explicitAdvisoryFilter === 'Sí';
+      allFunds = allFunds.filter(fund => 
+        fund.available_for_explicit_advisory === isExplicitAdvisory
+      );
     }
 
     // Ordenar los fondos
-    filteredFunds.sort((a, b) => {
+    allFunds.sort((a, b) => {
       switch (sortBy) {
         case 'ytd_return':
           return (b.ytd_return || 0) - (a.ytd_return || 0);
@@ -406,13 +399,13 @@ export async function GET(request: Request) {
     // Calcular paginación
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
-    const paginatedFunds = filteredFunds.slice(startIndex, endIndex);
+    const paginatedFunds = allFunds.slice(startIndex, endIndex);
 
     return NextResponse.json({
       funds: paginatedFunds,
-      total: filteredFunds.length,
+      total: allFunds.length,
       page,
-      totalPages: Math.ceil(filteredFunds.length / limit),
+      totalPages: Math.ceil(allFunds.length / limit),
       limit
     });
   } catch (error) {

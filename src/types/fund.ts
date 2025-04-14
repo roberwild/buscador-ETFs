@@ -7,6 +7,8 @@ export interface Fund {
   category: string;
   subcategory: string;
   compartment_code: string; // Código de compartimento
+  available_for_implicit_advisory: boolean; // Disponible para asesoramiento con cobro implícito
+  available_for_explicit_advisory: boolean; // Disponible para asesoramiento con cobro explícito
   management_fee: number;
   success_fee: number;
   min_investment: number;
@@ -22,6 +24,5 @@ export interface Fund {
   risk_level: RiskLevel;
   morningstar_rating: number; // 0-5 stars
   sharpe_ratio?: number; // Opcional ya que no todos los fondos podrían tenerlo
-  available_for_implicit_advisory: boolean;
   focus_list: string; // "Y" o "N"
 } 
