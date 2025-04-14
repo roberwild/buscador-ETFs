@@ -44,6 +44,140 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'factsheet_url', title: 'URL Ficha Comercial', visible: false },
 ];
 
+// Componente para el modal de aviso cuando no hay ficha comercial
+interface NoFactsheetModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  fundName: string;
+  fundIsin: string;
+}
+
+function NoFactsheetModal({ isOpen, onClose, fundName, fundIsin }: NoFactsheetModalProps) {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="text-center mb-6">
+          <svg className="mx-auto h-12 w-12 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h3 className="mt-4 text-lg font-medium text-gray-900">No se encuentra ficha comercial</h3>
+          <p className="mt-2 text-sm text-gray-500">
+            No hay ficha comercial disponible para el fondo {fundName} ({fundIsin}).
+          </p>
+        </div>
+
+        <div className="mt-5 sm:mt-6">
+          <button
+            type="button"
+            className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#D1472C] text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
+            onClick={onClose}
+          >
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Componente para el modal de aviso cuando no hay documento KIID disponible
+interface NoKiidModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  fundName: string;
+  fundIsin: string;
+}
+
+function NoKiidModal({ isOpen, onClose, fundName, fundIsin }: NoKiidModalProps) {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="text-center mb-6">
+          <svg className="mx-auto h-12 w-12 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h3 className="mt-4 text-lg font-medium text-gray-900">KIID PRIIPS No disponible</h3>
+          <p className="mt-2 text-sm text-gray-500">
+            No hay documento KIID PRIIPS disponible para el fondo {fundName} ({fundIsin}).
+          </p>
+        </div>
+
+        <div className="mt-5 sm:mt-6">
+          <button
+            type="button"
+            className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#D1472C] text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
+            onClick={onClose}
+          >
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function FundTable({ 
   isinSearch, 
   selectedCategories, 
@@ -55,6 +189,9 @@ export function FundTable({
 }: FundTableProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('ytd_return');
+  const [showNoFactsheetModal, setShowNoFactsheetModal] = useState(false);
+  const [showNoKiidModal, setShowNoKiidModal] = useState(false);
+  const [selectedFund, setSelectedFund] = useState<{name: string, isin: string} | null>(null);
 
   // Determinar qué columnas mostrar
   const columns = DEFAULT_COLUMNS.map(col => ({
@@ -89,6 +226,42 @@ export function FundTable({
   useEffect(() => {
     setPage(1);
   }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter]);
+
+  // Función para manejar el clic en el nombre del fondo
+  const handleFundNameClick = (fund: Fund) => {
+    if (fund.factsheet_url) {
+      // Si tiene URL de ficha comercial, abrir en nueva pestaña
+      window.open(fund.factsheet_url, '_blank', 'noopener,noreferrer');
+    } else {
+      // Si no tiene URL, mostrar el modal
+      setSelectedFund({ name: fund.name, isin: fund.isin });
+      setShowNoFactsheetModal(true);
+    }
+  };
+
+  // Función para manejar el clic en el botón KIID
+  const handleKiidClick = (e: React.MouseEvent, fund: Fund) => {
+    e.stopPropagation();
+    
+    // Para depuración
+    console.log(`KIID click for ${fund.isin}:`, fund.kiid_url);
+    
+    if (fund.kiid_url && fund.kiid_url.trim() !== '') {
+      // Si tiene URL de KIID, abrir en nueva pestaña
+      try {
+        window.open(fund.kiid_url, '_blank', 'noopener,noreferrer');
+      } catch (error) {
+        console.error('Error opening KIID URL:', error);
+        // Si hay error al abrir, mostrar el modal
+        setSelectedFund({ name: fund.name, isin: fund.isin });
+        setShowNoKiidModal(true);
+      }
+    } else {
+      // Si no tiene URL, mostrar el modal
+      setSelectedFund({ name: fund.name, isin: fund.isin });
+      setShowNoKiidModal(true);
+    }
+  };
 
   if (error) {
     return (
@@ -167,46 +340,20 @@ export function FundTable({
                 <td className="px-4 py-4 w-[440px] min-w-[440px] max-w-[440px]">
                   <div className="space-y-0.5 text-left">
                     <div className="flex justify-between items-start">
-                      {fund.factsheet_url ? (
-                        <a 
-                          href={fund.factsheet_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#D1472C] underline font-semibold block text-base"
-                        >
-                          {fund.name}
-                        </a>
-                      ) : (
-                        <a 
-                          href={`/fondos/${fund.isin}`}
-                          className="text-[#D1472C] underline font-semibold block text-base"
-                        >
-                          {fund.name}
-                        </a>
-                      )}
-                      {/* Mostramos el botón KIID según el tipo de fondo */}
-                      {/* Para fondos normales, mostrar solo si tienen URL */}
-                      {(dataSource !== 'etf-y-etc' && fund.kiid_url) && (
-                        <a 
-                          href={fund.kiid_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1"
-                        >
-                          KIID
-                        </a>
-                      )}
-                      {/* Para ETFs, mostrar siempre y usar la URL del CSV */}
-                      {(dataSource === 'etf-y-etc') && (
-                        <a 
-                          href={fund.kiid_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1"
-                        >
-                          KIID
-                        </a>
-                      )}
+                      <button 
+                        onClick={() => handleFundNameClick(fund)}
+                        className="text-[#D1472C] underline font-semibold block text-base text-left cursor-pointer"
+                        style={{ textAlign: 'left' }}
+                      >
+                        {fund.name}
+                      </button>
+                      {/* Botón KIID unificado para todos los tipos de fondos */}
+                      <button 
+                        onClick={(e) => handleKiidClick(e, fund)}
+                        className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1 ml-2 flex-shrink-0 cursor-pointer"
+                      >
+                        KIID
+                      </button>
                     </div>
                     <div className="text-sm text-gray-900 text-left"><span className="font-bold">ISIN:</span> <span className="font-bold">{fund.isin}</span></div>
                     <div className="text-sm text-gray-500 text-left">{fund.category}</div>
@@ -355,6 +502,26 @@ export function FundTable({
           </div>
         </div>
       </div>
+
+      {/* Modal para mostrar cuando no hay ficha comercial */}
+      {selectedFund && (
+        <NoFactsheetModal
+          isOpen={showNoFactsheetModal}
+          onClose={() => setShowNoFactsheetModal(false)}
+          fundName={selectedFund.name}
+          fundIsin={selectedFund.isin}
+        />
+      )}
+
+      {/* Modal para mostrar cuando no hay documento KIID */}
+      {selectedFund && (
+        <NoKiidModal
+          isOpen={showNoKiidModal}
+          onClose={() => setShowNoKiidModal(false)}
+          fundName={selectedFund.name}
+          fundIsin={selectedFund.isin}
+        />
+      )}
     </div>
   );
 } 

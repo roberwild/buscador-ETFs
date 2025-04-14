@@ -66,54 +66,109 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
   // El mapeo de los datos dependerá de la estructura de cada CSV
   if (dataSource === 'etf-y-etc') {
     // Mapeo específico para ETFs (podría tener campos diferentes)
-    return data.map((row: any) => ({
-      isin: row['ISIN'] || '',
-      name: row['Nombre'] || '',
-      currency: row['Divisa'] || '',
-      category: row['Categoria'] || row['Categoria Singular Bank'] || '',
-      subcategory: row['Subcategoria'] || row['Categoría Morningstar'] || '',
-      management_fee: parseNumericValue(row['Comisión Gestión'] || row['TER']),
-      success_fee: parseNumericValue(row['Comisión Exito'] || '0'),
-      min_investment: parseNumericValue(row['Mínimo Inicial'] || '0'),
-      min_investment_currency: row['Divisa'] || '',
-      aum: row['Patrimonio'] || '',
-      ytd_return: parseNumericValue(row['Rent YTD']),
-      one_year_return: parseNumericValue(row['Rent 12M'] || row['Rent 1Y']),
-      three_year_return: parseNumericValue(row['Rent 36M'] || row['Rent 3Y']),
-      five_year_return: parseNumericValue(row['Rent 60M'] || row['Rent 5Y']),
-      management_company: row['Gestora / Emisor'] || row['Emisor'] || '',
-      factsheet_url: row['URL Ficha Comercial'] || row['URL Ficha Comercial '] || '',
-      kiid_url: row['URL KID PRIIPS'] || '',
-      risk_level: mapRiskLevel(row['REQ'] || row['Riesgo'] || ''),
-      morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
-      available_for_implicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
-      focus_list: row['Focus List'] || 'N', // Añadimos el campo Focus List
-    }));
+    return data.map((row: any) => {
+      // Procesar la URL KIID - intentar diferentes posibles nombres de columna
+      let kiidUrl = '';
+      
+      // Para ETFs, la URL del KIID puede estar en diferentes columnas
+      // Intentamos buscar en varias columnas posibles
+      const possibleKiidColumns = [
+        'URL KID PRIIPS',
+        'KID URL', 
+        'KIID URL', 
+        'URL KIID',
+        'URL Documento KIID'
+      ];
+      
+      // También buscamos en todas las columnas para ver si alguna contiene una URL de api.fundinfo.com
+      for (const key of Object.keys(row)) {
+        const value = row[key];
+        if (typeof value === 'string') {
+          // Si la columna contiene una URL de Fundinfo, probablemente sea el KIID
+          if (value.includes('api.fundinfo.com') && value.includes('.pdf')) {
+            kiidUrl = value.startsWith('@') ? value.substring(1) : value;
+            break;
+          }
+        }
+      }
+      
+      // Si aún no encontramos la URL, probamos las columnas específicas
+      if (!kiidUrl) {
+        for (const colName of possibleKiidColumns) {
+          if (row[colName] && typeof row[colName] === 'string') {
+            kiidUrl = row[colName].startsWith('@') ? row[colName].substring(1) : row[colName];
+            if (kiidUrl) break;
+          }
+        }
+      }
+      
+      // Debugging para el ISIN específico
+      if (row['ISIN'] === 'IE00BNTVVR89') {
+        console.log('IE00BNTVVR89 - URL KIID encontrada:', kiidUrl);
+        // Mostrar todas las columnas disponibles para este ISIN
+        console.log('Columnas disponibles:', Object.keys(row).join(', '));
+      }
+      
+      return {
+        isin: row['ISIN'] || '',
+        name: row['Nombre'] || '',
+        currency: row['Divisa'] || '',
+        category: row['Categoria'] || row['Categoria Singular Bank'] || '',
+        subcategory: row['Subcategoria'] || row['Categoría Morningstar'] || '',
+        management_fee: parseNumericValue(row['Comisión Gestión'] || row['TER']),
+        success_fee: parseNumericValue(row['Comisión Exito'] || '0'),
+        min_investment: parseNumericValue(row['Mínimo Inicial'] || '0'),
+        min_investment_currency: row['Divisa'] || '',
+        aum: row['Patrimonio'] || '',
+        ytd_return: parseNumericValue(row['Rent YTD']),
+        one_year_return: parseNumericValue(row['Rent 12M'] || row['Rent 1Y']),
+        three_year_return: parseNumericValue(row['Rent 36M'] || row['Rent 3Y']),
+        five_year_return: parseNumericValue(row['Rent 60M'] || row['Rent 5Y']),
+        management_company: row['Gestora / Emisor'] || row['Emisor'] || '',
+        factsheet_url: row['URL Ficha Comercial'] || row['URL Ficha Comercial '] || '',
+        kiid_url: kiidUrl,
+        risk_level: mapRiskLevel(row['REQ'] || row['Riesgo'] || ''),
+        morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
+        available_for_implicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
+        focus_list: row['Focus List'] || 'N', // Añadimos el campo Focus List
+      };
+    });
   } else {
     // Mapeo original para fondos de gestión activa u otras categorías
-    return data.map((row: any) => ({
-      isin: row['ISIN'] || '',
-      name: row['Nombre'] || '',
-      currency: row['Divisa'] || '',
-      category: row['Categoria Singular Bank'] || '',
-      subcategory: row['Categoría Morningstar'] || '',
-      management_fee: parseNumericValue(row['Comisión Gestión']),
-      success_fee: parseNumericValue(row['Comisión Exito']),
-      min_investment: parseNumericValue(row['Mínimo Inicial']),
-      min_investment_currency: row['Divisa'] || '',
-      aum: row['Patrimonio'] || '',
-      ytd_return: parseNumericValue(row['Rent YTD']),
-      one_year_return: parseNumericValue(row['Rent 12M']),
-      three_year_return: parseNumericValue(row['Rent 36M']),
-      five_year_return: parseNumericValue(row['Rent 60M']),
-      management_company: row['Gestora / Emisor'] || '',
-      factsheet_url: row['URL Ficha Comercial'] || row['URL Ficha Comercial '] || '',
-      kiid_url: row['URL KID PRIIPS'] || '',
-      risk_level: mapRiskLevel(row['REQ']),
-      morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
-      available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
-      focus_list: row['Focus List'] || 'N', // Añadimos el campo por consistencia
-    }));
+    return data.map((row: any) => {
+      // Procesar la URL KIID - eliminar @ inicial y asegurar que es una URL válida
+      let kiidUrl = '';
+      if (row['URL KID PRIIPS']) {
+        // Si la URL comienza con @, eliminarlo
+        kiidUrl = row['URL KID PRIIPS'].startsWith('@') 
+          ? row['URL KID PRIIPS'].substring(1) 
+          : row['URL KID PRIIPS'];
+      }
+      
+      return {
+        isin: row['ISIN'] || '',
+        name: row['Nombre'] || '',
+        currency: row['Divisa'] || '',
+        category: row['Categoria Singular Bank'] || '',
+        subcategory: row['Categoría Morningstar'] || '',
+        management_fee: parseNumericValue(row['Comisión Gestión']),
+        success_fee: parseNumericValue(row['Comisión Exito']),
+        min_investment: parseNumericValue(row['Mínimo Inicial']),
+        min_investment_currency: row['Divisa'] || '',
+        aum: row['Patrimonio'] || '',
+        ytd_return: parseNumericValue(row['Rent YTD']),
+        one_year_return: parseNumericValue(row['Rent 12M']),
+        three_year_return: parseNumericValue(row['Rent 36M']),
+        five_year_return: parseNumericValue(row['Rent 60M']),
+        management_company: row['Gestora / Emisor'] || '',
+        factsheet_url: row['URL Ficha Comercial'] || row['URL Ficha Comercial '] || '',
+        kiid_url: kiidUrl,
+        risk_level: mapRiskLevel(row['REQ']),
+        morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
+        available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
+        focus_list: row['Focus List'] || 'N', // Añadimos el campo por consistencia
+      };
+    });
   }
 }
 
