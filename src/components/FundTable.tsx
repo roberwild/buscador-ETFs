@@ -164,12 +164,37 @@ export function FundTable({
               {columns.find(col => col.id === 'info')?.visible && (
                 <td className="px-4 py-4 w-[440px] min-w-[440px] max-w-[440px]">
                   <div className="space-y-0.5 text-left">
-                    <a 
-                      href={`/fondos/${fund.isin}`}
-                      className="text-[#D1472C] underline font-semibold block text-base"
-                    >
-                      {fund.name}
-                    </a>
+                    <div className="flex justify-between items-start">
+                      <a 
+                        href={`/fondos/${fund.isin}`}
+                        className="text-[#D1472C] underline font-semibold block text-base"
+                      >
+                        {fund.name}
+                      </a>
+                      {/* Mostramos el botón KIID según el tipo de fondo */}
+                      {/* Para fondos normales, mostrar solo si tienen URL */}
+                      {(dataSource !== 'etf-y-etc' && fund.kiid_url) && (
+                        <a 
+                          href={fund.kiid_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1"
+                        >
+                          KIID
+                        </a>
+                      )}
+                      {/* Para ETFs, mostrar siempre y usar la URL del CSV */}
+                      {(dataSource === 'etf-y-etc') && (
+                        <a 
+                          href={fund.kiid_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1"
+                        >
+                          KIID
+                        </a>
+                      )}
+                    </div>
                     <div className="text-sm text-gray-900 text-left"><span className="font-bold">ISIN:</span> <span className="font-bold">{fund.isin}</span></div>
                     <div className="text-sm text-gray-500 text-left">{fund.category}</div>
                     <div className="text-sm text-gray-500 text-left">{fund.management_company}</div>
