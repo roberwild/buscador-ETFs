@@ -33,9 +33,20 @@
   --link-blue: #0066CC;
 }
 
+.dark {
+  --dark-gray: #FFFFFF;
+  --light-gray: #1A1A1A;
+  --link-blue: #66B2FF;
+  color-scheme: dark;
+}
+
 body {
   font-family: 'Lato', sans-serif;
   color: var(--dark-gray);
+}
+
+.dark body {
+  background-color: #121212;
 }
 
 h1, h2, h3, h4, h5, h6 {

@@ -100,10 +100,10 @@ function NoFactsheetModal({ isOpen, onClose, fundName, fundIsin }: NoFactsheetMo
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6L6 18M6 6l12 12" />
@@ -114,8 +114,8 @@ function NoFactsheetModal({ isOpen, onClose, fundName, fundIsin }: NoFactsheetMo
           <svg className="mx-auto h-12 w-12 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <h3 className="mt-4 text-lg font-medium text-gray-900">No se encuentra ficha comercial</h3>
-          <p className="mt-2 text-sm text-gray-500">
+          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No se encuentra ficha comercial</h3>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-300">
             No hay ficha comercial disponible para el fondo {fundName} ({fundIsin}).
           </p>
         </div>
@@ -167,10 +167,10 @@ function NoKiidModal({ isOpen, onClose, fundName, fundIsin }: NoKiidModalProps) 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6L6 18M6 6l12 12" />
@@ -181,8 +181,8 @@ function NoKiidModal({ isOpen, onClose, fundName, fundIsin }: NoKiidModalProps) 
           <svg className="mx-auto h-12 w-12 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <h3 className="mt-4 text-lg font-medium text-gray-900">KIID PRIIPS No disponible</h3>
-          <p className="mt-2 text-sm text-gray-500">
+          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">KIID PRIIPS No disponible</h3>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-300">
             No hay documento KIID PRIIPS disponible para el fondo {fundName} ({fundIsin}).
           </p>
         </div>
@@ -314,11 +314,11 @@ export function FundTable({
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-medium text-gray-900">{total.toLocaleString()} {tableTitle}</h2>
+        <h2 className="text-2xl font-medium text-gray-900 dark:text-white">{total.toLocaleString()} {tableTitle}</h2>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Ordenar por</span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">Ordenar por</span>
           <select 
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[200px]"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm min-w-[200px] dark:bg-gray-800 dark:text-white"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
@@ -337,12 +337,12 @@ export function FundTable({
           WebkitOverflowScrolling: 'touch'
         }}>
           <table className="min-w-full table-fixed">
-            <thead className="bg-gray-200">
+            <thead className="bg-gray-200 dark:bg-gray-700">
               <tr>
                 {columns.filter(col => col.visible).map((column) => (
                   <th 
                     key={column.id}
-                    className={`px-4 py-2 ${column.id === 'info' ? 'text-left' : 'text-center'} text-sm font-medium text-gray-700 ${
+                    className={`px-4 py-2 ${column.id === 'info' ? 'text-left' : 'text-center'} text-sm font-medium text-gray-700 dark:text-gray-200 ${
                       column.id === 'info' ? 'w-[440px] min-w-[440px] max-w-[440px]' : ''
                     }`}
                     colSpan={column.id === 'ytd_return' || column.id === 'one_year_return' || column.id === 'three_year_return' || column.id === 'five_year_return' ? 1 : undefined}
@@ -356,16 +356,16 @@ export function FundTable({
                 {columns.filter(col => col.visible).map((column) => (
                   <th 
                     key={`sub-${column.id}`}
-                    className="px-4 py-2 bg-gray-200 text-center text-xs text-gray-700"
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-center text-xs text-gray-700 dark:text-gray-200"
                   >
                     {column.subTitle || ''}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
               {funds.map((fund, index) => (
-                <tr key={fund.isin} className={index % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}>
+                <tr key={fund.isin} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700' : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'}>
                   {columns.filter(col => col.visible).map(column => {
                     switch(column.id) {
                       case 'info':
@@ -387,16 +387,16 @@ export function FundTable({
                                   KIID
                                 </button>
                               </div>
-                              <div className="text-sm text-gray-900 text-left"><span className="font-bold">ISIN:</span> <span className="font-bold">{fund.isin}</span></div>
-                              <div className="text-sm text-gray-500 text-left">{fund.category}</div>
-                              <div className="text-sm text-gray-500 text-left">{fund.management_company}</div>
+                              <div className="text-sm text-gray-900 dark:text-gray-200 text-left"><span className="font-bold">ISIN:</span> <span className="font-bold">{fund.isin}</span></div>
+                              <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.category}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.management_company}</div>
                             </div>
                           </td>
                         );
                       case 'risk_level':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.risk_level}
                             </div>
                           </td>
@@ -404,37 +404,37 @@ export function FundTable({
                       case 'ytd_return':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">{fund.ytd_return.toFixed(2)}%</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.ytd_return.toFixed(2)}%</div>
                           </td>
                         );
                       case 'one_year_return':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">{fund.one_year_return.toFixed(2)}%</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.one_year_return.toFixed(2)}%</div>
                           </td>
                         );
                       case 'three_year_return':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">{fund.three_year_return.toFixed(2)}%</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.three_year_return.toFixed(2)}%</div>
                           </td>
                         );
                       case 'five_year_return':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">{fund.five_year_return.toFixed(2)}%</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.five_year_return.toFixed(2)}%</div>
                           </td>
                         );
                       case 'management_fee':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">{fund.management_fee.toFixed(2)}%</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.management_fee.toFixed(2)}%</div>
                           </td>
                         );
                       case 'focus_list':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.focus_list === 'Y' ? 'Sí' : 'No'}
                             </div>
                           </td>
@@ -442,7 +442,7 @@ export function FundTable({
                       case 'implicit_advisory':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.available_for_implicit_advisory ? 'Sí' : 'No'}
                             </div>
                           </td>
@@ -450,7 +450,7 @@ export function FundTable({
                       case 'explicit_advisory':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.available_for_explicit_advisory ? 'Sí' : 'No'}
                             </div>
                           </td>
@@ -458,7 +458,7 @@ export function FundTable({
                       case 'currency':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.currency}
                             </div>
                           </td>
@@ -466,7 +466,7 @@ export function FundTable({
                       case 'hedge':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.hedge === 'Y' ? 'Sí' : 'No'}
                             </div>
                           </td>
@@ -474,7 +474,7 @@ export function FundTable({
                       case 'compartment_code':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.compartment_code}
                             </div>
                           </td>
@@ -482,7 +482,7 @@ export function FundTable({
                       case 'category':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.category}
                             </div>
                           </td>
@@ -490,7 +490,7 @@ export function FundTable({
                       case 'rating':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.rating}
                             </div>
                           </td>
@@ -498,7 +498,7 @@ export function FundTable({
                       case 'maturity_range':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.maturity_range}
                             </div>
                           </td>
@@ -506,7 +506,7 @@ export function FundTable({
                       case 'dividend_policy':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.dividend_policy === 'C' ? 'Acumulación' : 
                                fund.dividend_policy === 'D' ? 'Distribución' : 
                                fund.dividend_policy}
@@ -516,7 +516,7 @@ export function FundTable({
                       case 'replication_type':
                         return (
                           <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                               {fund.replication_type || '-'}
                             </div>
                           </td>
@@ -530,33 +530,37 @@ export function FundTable({
             </tbody>
           </table>
         </div>
-        <div className="sticky bottom-0 left-0 right-0 h-2 bg-gray-100 overflow-hidden">
+        <div className="sticky bottom-0 left-0 right-0 h-2 bg-gray-100 dark:bg-gray-700 overflow-hidden">
           <div className="h-full w-full overflow-x-scroll" aria-hidden="true"></div>
         </div>
       </div>
       
-      <div className="mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+      <div className="mt-6 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 sm:px-6">
         <div className="flex flex-1 justify-between sm:hidden">
           <button
             onClick={() => setPage(page > 1 ? page - 1 : 1)}
             disabled={page === 1}
-            className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Anterior
           </button>
           <button
             onClick={() => setPage(page < totalPages ? page + 1 : totalPages)}
             disabled={page === totalPages}
-            className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Siguiente
           </button>
         </div>
         <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm text-gray-700">
-              Mostrando <span className="font-medium">{((page - 1) * 20) + 1}</span> a{' '}
-              <span className="font-medium">{Math.min(page * 20, total)}</span> de{' '}
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Mostrando <span className="font-medium">
+                {((page - 1) * 20) + 1}
+              </span> a{' '}
+              <span className="font-medium">
+                {Math.min(page * 20, total)}
+              </span> de{' '}
               <span className="font-medium">{total}</span> resultados
             </p>
           </div>
@@ -565,7 +569,7 @@ export function FundTable({
               <button
                 onClick={() => setPage(page > 1 ? page - 1 : 1)}
                 disabled={page === 1}
-                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
               >
                 <span className="sr-only">Anterior</span>
                 &lt;
@@ -603,7 +607,7 @@ export function FundTable({
               <button
                 onClick={() => setPage(page < totalPages ? page + 1 : totalPages)}
                 disabled={page === totalPages}
-                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
               >
                 <span className="sr-only">Siguiente</span>
                 &gt;

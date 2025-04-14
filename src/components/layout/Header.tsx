@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search } from 'lucide-react'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const navigationItems = [
   { name: 'Ahorrar', href: '/ahorrar' },
@@ -24,7 +25,7 @@ export default function Header() {
   const [activeItem, setActiveItem] = useState('/invertir')
 
   return (
-    <header className="bg-white border-b border-gray-100">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
       <style jsx global>{`
         .nav-link {
           position: relative;
@@ -64,6 +65,7 @@ export default function Header() {
                   fill
                   style={{ objectFit: 'contain' }}
                   priority
+                  className="dark:invert"
                 />
               </div>
             </Link>
@@ -94,19 +96,21 @@ export default function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-[13px] text-gray-600 hover:text-[#D1472C]"
+                className="text-[13px] text-gray-600 dark:text-gray-300 hover:text-[#D1472C]"
               >
                 {item.name}
               </Link>
             ))}
             
-            <button className="text-gray-600 hover:text-[#D1472C]">
+            <button className="text-gray-600 dark:text-gray-300 hover:text-[#D1472C]">
               <Search className="h-[18px] w-[18px]" />
             </button>
 
+            <ThemeToggle />
+
             <Link
               href="https://clientes.selfbank.es/conexion"
-              className="text-[13px] text-gray-700 hover:text-[#D1472C] px-4 py-[6px] border border-gray-300 rounded"
+              className="text-[13px] text-gray-700 dark:text-gray-300 hover:text-[#D1472C] px-4 py-[6px] border border-gray-300 dark:border-gray-700 rounded"
             >
               Área cliente
             </Link>

@@ -220,13 +220,13 @@ export default function Home() {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col dark:bg-gray-900">
       <Header />
       
       <main className="flex-grow">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold">Buscador de Fondos de Inversión</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold dark:text-white">Buscador de Fondos de Inversión</h1>
             <div className="flex items-center gap-3">
               <Link 
                 href="/admin/upload"
@@ -244,14 +244,14 @@ export default function Home() {
           </div>
           
           {/* Pestañas de navegación */}
-          <div className="border-b border-gray-200 mb-6">
+          <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
             <nav className="-mb-px flex space-x-4 sm:space-x-8" aria-label="Tabs">
               <button
                 onClick={() => handleTabChange('fondos-gestion-activa')}
                 className={`${
                   activeTab === 'fondos-gestion-activa'
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-red-500 text-red-600 dark:text-red-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm sm:text-base`}
               >
                 Fondos gestión activa
@@ -260,8 +260,8 @@ export default function Home() {
                 onClick={() => handleTabChange('fondos-indexados')}
                 className={`${
                   activeTab === 'fondos-indexados'
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-red-500 text-red-600 dark:text-red-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm sm:text-base`}
               >
                 Fondos indexados
@@ -270,8 +270,8 @@ export default function Home() {
                 onClick={() => handleTabChange('etf-y-etc')}
                 className={`${
                   activeTab === 'etf-y-etc'
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-red-500 text-red-600 dark:text-red-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm sm:text-base`}
               >
                 ETF y ETC
@@ -283,7 +283,7 @@ export default function Home() {
           <div className="flex justify-end mb-4">
             <a 
               href={`/api/funds?dataSource=${activeTab}&download=true`}
-              className="text-gray-600 hover:text-red-600 flex items-center gap-1 text-sm"
+              className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 flex items-center gap-1 text-sm"
               download
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -296,10 +296,10 @@ export default function Home() {
           {/* Botón para mostrar/ocultar filtros en móvil */}
           <button
             onClick={toggleFilterPanel}
-            className="md:hidden flex items-center gap-2 mb-4 bg-gray-100 px-4 py-2 rounded-md"
+            className="md:hidden flex items-center gap-2 mb-4 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-md"
           >
             <Filter size={20} />
-            <span>{isFilterPanelOpen ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
+            <span className="dark:text-white">{isFilterPanelOpen ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
           </button>
 
           <div className="flex flex-col md:flex-row gap-8">
@@ -307,14 +307,14 @@ export default function Home() {
             <div className={`
               ${isFilterPanelCollapsed ? 'md:w-12' : 'md:w-72'}
               md:flex-shrink-0
-              fixed md:static inset-0 z-30 bg-white md:bg-transparent
+              fixed md:static inset-0 z-30 bg-white dark:bg-gray-900 md:bg-transparent
               transition-all duration-300 ease-in-out
               ${isFilterPanelOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
               {/* Botón para contraer/expandir en desktop */}
               <button
                 onClick={toggleFilterPanelCollapse}
-                className="hidden md:flex absolute -right-4 top-12 items-center justify-center h-8 w-8 rounded-full bg-white shadow-md z-10 text-gray-600 hover:text-red-600 focus:outline-none"
+                className="hidden md:flex absolute -right-4 top-12 items-center justify-center h-8 w-8 rounded-full bg-white dark:bg-gray-800 shadow-md z-10 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 focus:outline-none"
               >
                 {isFilterPanelCollapsed ? (
                   <ChevronRight size={16} />
@@ -323,30 +323,30 @@ export default function Home() {
                 )}
               </button>
 
-              <div className={`bg-white h-full md:h-auto overflow-y-auto md:rounded-lg md:shadow p-6 ${isFilterPanelCollapsed ? 'overflow-hidden' : ''}`}>
+              <div className={`bg-white dark:bg-gray-800 h-full md:h-auto overflow-y-auto md:rounded-lg md:shadow p-6 ${isFilterPanelCollapsed ? 'overflow-hidden' : ''}`}>
                 <div className="flex justify-between items-center mb-6 md:hidden">
-                  <h2 className="text-xl font-semibold">Filtros</h2>
-                  <button onClick={toggleFilterPanel} className="p-2">
+                  <h2 className="text-xl font-semibold dark:text-white">Filtros</h2>
+                  <button onClick={toggleFilterPanel} className="p-2 dark:text-gray-300">
                     <X size={24} />
                   </button>
                 </div>
 
                 {!isFilterPanelCollapsed && (
                   <>
-                    <h2 className="hidden md:block text-xl font-semibold mb-6">
+                    <h2 className="hidden md:block text-xl font-semibold mb-6 dark:text-white">
                       {activeTab === 'fondos-gestion-activa' && 'Filtrar fondos de inversión'}
                       {activeTab === 'fondos-indexados' && 'Filtrar fondos indexados'}
                       {activeTab === 'etf-y-etc' && 'Filtrar ETFs y ETCs'}
                     </h2>
                     
                     {/* Sección Búsqueda con acordeón */}
-                    <div className="mb-4 border-b pb-2">
+                    <div className="mb-4 border-b dark:border-gray-700 pb-2">
                       <div 
                         className="flex justify-between items-center cursor-pointer py-2"
                         onClick={() => toggleSection('search')}
                       >
-                        <h3 className="font-medium">Buscar</h3>
-                        <button className="text-gray-500">
+                        <h3 className="font-medium dark:text-white">Buscar</h3>
+                        <button className="text-gray-500 dark:text-gray-400">
                           {expandedSections.search ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
@@ -355,7 +355,7 @@ export default function Home() {
                           <input
                             type="text"
                             placeholder="ISIN"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
                             value={isinSearch}
                             onChange={(e) => setIsinSearch(e.target.value)}
                           />
@@ -364,13 +364,13 @@ export default function Home() {
                     </div>
 
                     {/* Categorías - Adaptadas según la pestaña activa - con acordeón */}
-                    <div className="mb-4 border-b pb-2">
+                    <div className="mb-4 border-b dark:border-gray-700 pb-2">
                       <div 
                         className="flex justify-between items-center cursor-pointer py-2"
                         onClick={() => toggleSection('category')}
                       >
-                        <h3 className="font-medium">Categoría</h3>
-                        <button className="text-gray-500">
+                        <h3 className="font-medium dark:text-white">Categoría</h3>
+                        <button className="text-gray-500 dark:text-gray-400">
                           {expandedSections.category ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
@@ -395,7 +395,7 @@ export default function Home() {
                                 checked={selectedCategories.includes(category)}
                                 onChange={() => handleCategoryChange(category)}
                               />
-                              <span className="ml-2 text-sm">{category}</span>
+                              <span className="ml-2 text-sm dark:text-gray-300">{category}</span>
                             </label>
                           ))}
                           
@@ -417,7 +417,7 @@ export default function Home() {
                                 checked={selectedCategories.includes(category)}
                                 onChange={() => handleCategoryChange(category)}
                               />
-                              <span className="ml-2 text-sm">{category}</span>
+                              <span className="ml-2 text-sm dark:text-gray-300">{category}</span>
                             </label>
                           ))}
                           
@@ -447,7 +447,7 @@ export default function Home() {
                                 checked={selectedCategories.includes(category)}
                                 onChange={() => handleCategoryChange(category)}
                               />
-                              <span className="ml-2 text-sm">{category}</span>
+                              <span className="ml-2 text-sm dark:text-gray-300">{category}</span>
                             </label>
                           ))}
                         </div>
@@ -455,13 +455,13 @@ export default function Home() {
                     </div>
 
                     {/* Riesgo - con acordeón */}
-                    <div className="mb-4 border-b pb-2">
+                    <div className="mb-4 border-b dark:border-gray-700 pb-2">
                       <div 
                         className="flex justify-between items-center cursor-pointer py-2"
                         onClick={() => toggleSection('risk')}
                       >
-                        <h3 className="font-medium">Riesgo</h3>
-                        <button className="text-gray-500">
+                        <h3 className="font-medium dark:text-white">Riesgo</h3>
+                        <button className="text-gray-500 dark:text-gray-400">
                           {expandedSections.risk ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
@@ -482,7 +482,7 @@ export default function Home() {
                                 checked={selectedRiskLevels.includes(risk as RiskLevel)}
                                 onChange={() => handleRiskLevelChange(risk as RiskLevel)}
                               />
-                              <span className="ml-2 text-sm">{risk}</span>
+                              <span className="ml-2 text-sm dark:text-gray-300">{risk}</span>
                             </label>
                           ))}
                         </div>
@@ -490,13 +490,13 @@ export default function Home() {
                     </div>
 
                     {/* Divisa con acordeón */}
-                    <div className="mb-4 border-b pb-2">
+                    <div className="mb-4 border-b dark:border-gray-700 pb-2">
                       <div 
                         className="flex justify-between items-center cursor-pointer py-2"
                         onClick={() => toggleSection('currency')}
                       >
-                        <h3 className="font-medium">Divisa</h3>
-                        <button className="text-gray-500">
+                        <h3 className="font-medium dark:text-white">Divisa</h3>
+                        <button className="text-gray-500 dark:text-gray-400">
                           {expandedSections.currency ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
@@ -511,7 +511,7 @@ export default function Home() {
                               checked={selectedCurrency === ''}
                               onChange={() => setSelectedCurrency('')}
                             />
-                            <label htmlFor="currency-all" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="currency-all" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                               Todas
                             </label>
                           </div>
@@ -524,7 +524,7 @@ export default function Home() {
                               checked={selectedCurrency === 'EUR'}
                               onChange={() => setSelectedCurrency('EUR')}
                             />
-                            <label htmlFor="currency-eur" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="currency-eur" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                               EUR
                             </label>
                           </div>
@@ -537,7 +537,7 @@ export default function Home() {
                               checked={selectedCurrency === 'USD'}
                               onChange={() => setSelectedCurrency('USD')}
                             />
-                            <label htmlFor="currency-usd" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="currency-usd" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                               USD
                             </label>
                           </div>
@@ -546,13 +546,13 @@ export default function Home() {
                     </div>
 
                     {/* Filtro Focus List - Disponible en todas las pestañas */}
-                    <div className="mb-4 border-b pb-2">
+                    <div className="mb-4 border-b dark:border-gray-700 pb-2">
                       <div 
                         className="flex justify-between items-center cursor-pointer py-2"
                         onClick={() => toggleSection('focusList')}
                       >
-                        <h3 className="font-medium">Focus List</h3>
-                        <button className="text-gray-500">
+                        <h3 className="font-medium dark:text-white">Focus List</h3>
+                        <button className="text-gray-500 dark:text-gray-400">
                           {expandedSections.focusList ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
@@ -567,7 +567,7 @@ export default function Home() {
                               checked={focusListFilter === 'Todos'}
                               onChange={() => setFocusListFilter('Todos')}
                             />
-                            <label htmlFor="focus-all" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="focus-all" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                               Todos
                             </label>
                           </div>
@@ -580,7 +580,7 @@ export default function Home() {
                               checked={focusListFilter === 'Sí'}
                               onChange={() => setFocusListFilter('Sí')}
                             />
-                            <label htmlFor="focus-yes" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="focus-yes" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                               Sí
                             </label>
                           </div>
@@ -593,7 +593,7 @@ export default function Home() {
                               checked={focusListFilter === 'No'}
                               onChange={() => setFocusListFilter('No')}
                             />
-                            <label htmlFor="focus-no" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="focus-no" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                               No
                             </label>
                           </div>
@@ -603,13 +603,13 @@ export default function Home() {
 
                     {/* Filtro Disponible para asesoramiento con cobro implícito - No disponible para ETFs */}
                     {activeTab !== 'etf-y-etc' && (
-                      <div className="mb-4 border-b pb-2">
+                      <div className="mb-4 border-b dark:border-gray-700 pb-2">
                         <div 
                           className="flex justify-between items-center cursor-pointer py-2"
                           onClick={() => toggleSection('implicitAdvisory')}
                         >
-                          <h3 className="font-medium">Asesoramiento con cobro implícito</h3>
-                          <button className="text-gray-500">
+                          <h3 className="font-medium dark:text-white">Asesoramiento con cobro implícito</h3>
+                          <button className="text-gray-500 dark:text-gray-400">
                             {expandedSections.implicitAdvisory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </div>
@@ -624,7 +624,7 @@ export default function Home() {
                                 checked={implicitAdvisoryFilter === 'Todos'}
                                 onChange={() => setImplicitAdvisoryFilter('Todos')}
                               />
-                              <label htmlFor="implicit-all" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="implicit-all" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 Todos
                               </label>
                             </div>
@@ -637,7 +637,7 @@ export default function Home() {
                                 checked={implicitAdvisoryFilter === 'Sí'}
                                 onChange={() => setImplicitAdvisoryFilter('Sí')}
                               />
-                              <label htmlFor="implicit-yes" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="implicit-yes" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 Sí
                               </label>
                             </div>
@@ -650,7 +650,7 @@ export default function Home() {
                                 checked={implicitAdvisoryFilter === 'No'}
                                 onChange={() => setImplicitAdvisoryFilter('No')}
                               />
-                              <label htmlFor="implicit-no" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="implicit-no" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 No
                               </label>
                             </div>
@@ -661,13 +661,13 @@ export default function Home() {
 
                     {/* Filtro Disponible para asesoramiento con cobro explícito - No disponible para ETFs */}
                     {activeTab !== 'etf-y-etc' && (
-                      <div className="mb-4 border-b pb-2">
+                      <div className="mb-4 border-b dark:border-gray-700 pb-2">
                         <div 
                           className="flex justify-between items-center cursor-pointer py-2"
                           onClick={() => toggleSection('explicitAdvisory')}
                         >
-                          <h3 className="font-medium">Asesoramiento con cobro explícito</h3>
-                          <button className="text-gray-500">
+                          <h3 className="font-medium dark:text-white">Asesoramiento con cobro explícito</h3>
+                          <button className="text-gray-500 dark:text-gray-400">
                             {expandedSections.explicitAdvisory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </div>
@@ -682,7 +682,7 @@ export default function Home() {
                                 checked={explicitAdvisoryFilter === 'Todos'}
                                 onChange={() => setExplicitAdvisoryFilter('Todos')}
                               />
-                              <label htmlFor="explicit-all" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="explicit-all" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 Todos
                               </label>
                             </div>
@@ -695,7 +695,7 @@ export default function Home() {
                                 checked={explicitAdvisoryFilter === 'Sí'}
                                 onChange={() => setExplicitAdvisoryFilter('Sí')}
                               />
-                              <label htmlFor="explicit-yes" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="explicit-yes" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 Sí
                               </label>
                             </div>
@@ -708,7 +708,7 @@ export default function Home() {
                                 checked={explicitAdvisoryFilter === 'No'}
                                 onChange={() => setExplicitAdvisoryFilter('No')}
                               />
-                              <label htmlFor="explicit-no" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="explicit-no" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 No
                               </label>
                             </div>
@@ -719,13 +719,13 @@ export default function Home() {
 
                     {/* Filtro Hedge - No disponible para ETFs */}
                     {activeTab !== 'etf-y-etc' && (
-                      <div className="mb-4 border-b pb-2">
+                      <div className="mb-4 border-b dark:border-gray-700 pb-2">
                         <div 
                           className="flex justify-between items-center cursor-pointer py-2"
                           onClick={() => toggleSection('hedge')}
                         >
-                          <h3 className="font-medium">Hedge</h3>
-                          <button className="text-gray-500">
+                          <h3 className="font-medium dark:text-white">Hedge</h3>
+                          <button className="text-gray-500 dark:text-gray-400">
                             {expandedSections.hedge ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </div>
@@ -740,7 +740,7 @@ export default function Home() {
                                 checked={hedgeFilter === 'Todos'}
                                 onChange={() => setHedgeFilter('Todos')}
                               />
-                              <label htmlFor="hedge-all" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="hedge-all" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 Todos
                               </label>
                             </div>
@@ -753,7 +753,7 @@ export default function Home() {
                                 checked={hedgeFilter === 'Sí'}
                                 onChange={() => setHedgeFilter('Sí')}
                               />
-                              <label htmlFor="hedge-yes" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="hedge-yes" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 Sí
                               </label>
                             </div>
@@ -766,7 +766,7 @@ export default function Home() {
                                 checked={hedgeFilter === 'No'}
                                 onChange={() => setHedgeFilter('No')}
                               />
-                              <label htmlFor="hedge-no" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="hedge-no" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 No
                               </label>
                             </div>
@@ -776,13 +776,13 @@ export default function Home() {
                     )}
 
                     {/* Filtro de Política de dividendos */}
-                    <div className="mb-4 border-b pb-2">
+                    <div className="mb-4 border-b dark:border-gray-700 pb-2">
                       <div 
                         className="flex justify-between items-center cursor-pointer py-2"
                         onClick={() => toggleSection('dividendPolicy')}
                       >
-                        <h3 className="font-medium">Política de dividendos</h3>
-                        <button className="text-gray-500">
+                        <h3 className="font-medium dark:text-white">Política de dividendos</h3>
+                        <button className="text-gray-500 dark:text-gray-400">
                           {expandedSections.dividendPolicy ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
@@ -797,7 +797,7 @@ export default function Home() {
                               checked={dividendPolicyFilter === 'Todos'}
                               onChange={() => setDividendPolicyFilter('Todos')}
                             />
-                            <label htmlFor="dividend-all" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="dividend-all" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                               Todos
                             </label>
                           </div>
@@ -810,7 +810,7 @@ export default function Home() {
                               checked={dividendPolicyFilter === 'Acumulación'}
                               onChange={() => setDividendPolicyFilter('Acumulación')}
                             />
-                            <label htmlFor="dividend-accumulation" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="dividend-accumulation" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                               Acumulación
                             </label>
                           </div>
@@ -823,7 +823,7 @@ export default function Home() {
                               checked={dividendPolicyFilter === 'Distribución'}
                               onChange={() => setDividendPolicyFilter('Distribución')}
                             />
-                            <label htmlFor="dividend-distribution" className="ml-2 block text-sm text-gray-700">
+                            <label htmlFor="dividend-distribution" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                               Distribución
                             </label>
                           </div>
@@ -833,13 +833,13 @@ export default function Home() {
 
                     {/* Filtro de Tipo de Réplica (solo visible en ETFs y ETCs) */}
                     {activeTab === 'etf-y-etc' && (
-                      <div className="mb-4 border-b pb-2">
+                      <div className="mb-4 border-b dark:border-gray-700 pb-2">
                         <div 
                           className="flex justify-between items-center cursor-pointer py-2"
                           onClick={() => toggleSection('replicationType')}
                         >
-                          <h3 className="font-medium">Tipo de Réplica</h3>
-                          <button className="text-gray-500">
+                          <h3 className="font-medium dark:text-white">Tipo de Réplica</h3>
+                          <button className="text-gray-500 dark:text-gray-400">
                             {expandedSections.replicationType ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </div>
@@ -854,7 +854,7 @@ export default function Home() {
                                 checked={replicationTypeFilter === 'Todos'}
                                 onChange={() => setReplicationTypeFilter('Todos')}
                               />
-                              <label htmlFor="replication-all" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="replication-all" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 Todos
                               </label>
                             </div>
@@ -867,7 +867,7 @@ export default function Home() {
                                 checked={replicationTypeFilter === 'Física'}
                                 onChange={() => setReplicationTypeFilter('Física')}
                               />
-                              <label htmlFor="replication-fisica" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="replication-fisica" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 Física
                               </label>
                             </div>
@@ -880,7 +880,7 @@ export default function Home() {
                                 checked={replicationTypeFilter === 'Sintética'}
                                 onChange={() => setReplicationTypeFilter('Sintética')}
                               />
-                              <label htmlFor="replication-sintetica" className="ml-2 block text-sm text-gray-700">
+                              <label htmlFor="replication-sintetica" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                                 Sintética
                               </label>
                             </div>
@@ -895,8 +895,8 @@ export default function Home() {
                         className="flex justify-between items-center cursor-pointer py-2"
                         onClick={() => toggleSection('columns')}
                       >
-                        <h3 className="font-medium">Columnas visibles</h3>
-                        <button className="text-gray-500">
+                        <h3 className="font-medium dark:text-white">Columnas visibles</h3>
+                        <button className="text-gray-500 dark:text-gray-400">
                           {expandedSections.columns ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
@@ -940,7 +940,7 @@ export default function Home() {
                               })
                               .map(column => (
                               <label key={column.id} className="flex items-center justify-between">
-                                <span className="text-sm">{column.title} {column.subTitle ? `(${column.subTitle})` : ''}</span>
+                                <span className="text-sm dark:text-gray-300">{column.title} {column.subTitle ? `(${column.subTitle})` : ''}</span>
                                 <input
                                   type="checkbox"
                                   className="form-checkbox h-4 w-4 text-red-600"
@@ -954,9 +954,9 @@ export default function Home() {
                             {/* Columnas específicas para ETFs */}
                             {activeTab === 'etf-y-etc' && (
                               <div className="space-y-2 mt-2 border-t pt-2">
-                                <div className="font-medium text-sm text-gray-700 mb-1">Columnas para ETFs de Renta Fija:</div>
+                                <div className="font-medium text-sm text-gray-700 mb-1 dark:text-gray-300">Columnas para ETFs de Renta Fija:</div>
                                 <label className="flex items-center justify-between">
-                                  <span className="text-sm">Calificación</span>
+                                  <span className="text-sm dark:text-gray-300">Calificación</span>
                                   <input
                                     type="checkbox"
                                     className="form-checkbox h-4 w-4 text-red-600"
@@ -965,7 +965,7 @@ export default function Home() {
                                   />
                                 </label>
                                 <label className="flex items-center justify-between">
-                                  <span className="text-sm">Rango de vencimientos</span>
+                                  <span className="text-sm dark:text-gray-300">Rango de vencimientos</span>
                                   <input
                                     type="checkbox"
                                     className="form-checkbox h-4 w-4 text-red-600"

@@ -4,44 +4,60 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 const legalLinks = [
-  { name: 'Aviso legal', href: '/aviso-legal' },
-  { name: 'Información legal', href: '/informacion-legal' },
-  { name: 'Política de cookies', href: '/politica-cookies' },
-  { name: 'Política de protección de datos', href: '/politica-proteccion-datos' },
-  { name: 'Seguridad', href: '/seguridad' },
+  { name: 'Aviso Legal', href: '/aviso-legal' },
+  { name: 'Política de Privacidad', href: '/politica-privacidad' },
+  { name: 'Política de Cookies', href: '/politica-cookies' },
+  { name: 'Información al cliente', href: '/info-cliente' },
+  { name: 'MiFID', href: '/mifid' },
   { name: 'Tarifas', href: '/tarifas' },
-]
+  { name: 'Tablón de Anuncios', href: '/anuncios' },
+  { name: 'Contratos', href: '/contratos' },
+];
 
 export default function Footer() {
   return (
-    <footer className="bg-black text-white py-2">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Logo and Contact Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start mb-2">
+    <footer className="bg-[#333333] dark:bg-black text-white">
+      <div className="max-w-[1600px] mx-auto px-6 py-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <Image
-              src="/images/logo-footer.png"
-              alt="Self Bank"
-              width={280}
-              height={70}
-              className="h-12 w-auto mb-2"
-              priority
-            />
+            <h3 className="text-lg font-semibold mb-4">Sobre nosotros</h3>
+            <ul className="space-y-2">
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Quiénes somos</Link></li>
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Equipo directivo</Link></li>
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Trabaja con nosotros</Link></li>
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Sala de prensa</Link></li>
+            </ul>
           </div>
-          <div className="text-right">
-            <p className="text-xl font-semibold mb-0">914 890 888</p>
-            <p className="text-gray-400 text-sm mb-0">lunes a viernes de 8:00 a 22:00</p>
-            <a 
-              href="mailto:informacion@selfbank.es" 
-              className="text-gray-400 hover:text-white transition-colors text-sm"
-            >
-              informacion@selfbank.es
-            </a>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Productos</h3>
+            <ul className="space-y-2">
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Cuentas</Link></li>
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Fondos de inversión</Link></li>
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">ETFs</Link></li>
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Planes de pensiones</Link></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Ayuda</h3>
+            <ul className="space-y-2">
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Preguntas frecuentes</Link></li>
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Contacto</Link></li>
+              <li><Link href="#" className="text-gray-300 dark:text-gray-400 hover:text-white transition-colors">Seguridad</Link></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Contacto</h3>
+            <p className="text-gray-300 dark:text-gray-400 mb-2">Teléfono: 91 123 45 67</p>
+            <p className="text-gray-300 dark:text-gray-400 mb-2">Email: info@selfbank.es</p>
+            <p className="text-gray-300 dark:text-gray-400">Lun-Vie: 9:00-18:00h</p>
           </div>
         </div>
-
-        {/* Social Icons */}
-        <div className="flex justify-end mb-2 space-x-3">
+        
+        {/* Social Media Icons */}
+        <div className="flex justify-end mb-2 space-x-3 mt-8">
           <a href="#" className="text-white hover:text-gray-300">
             <Image
               src="/images/blog-icon.svg"
@@ -90,7 +106,7 @@ export default function Footer() {
         </div>
 
         {/* Legal Links */}
-        <div className="border-t border-gray-800 pt-2">
+        <div className="border-t border-gray-800 pt-4 mt-4">
           <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1">
             {legalLinks.map((item) => (
               <Link
@@ -104,21 +120,8 @@ export default function Footer() {
           </nav>
         </div>
 
-        {/* Legal Text */}
-        <div className="mt-2 text-gray-400 text-[10px]">
-          <p className="leading-none">
-            Singular Bank, S.A.U. (anteriormente Self Trade Bank S.A.U.) Calle de Goya, 11. 28001 Madrid. 
-            Entidad de crédito sujeta a la supervisión del Banco de España e inscrita en el Registro de 
-            Entidades de Crédito Nacionales del Banco de España con el número 1490. CIF A-85597821 
-            Inscrita en el Registro Mercantil de Madrid, tomo 26409, folio 1, sección 8ª, hoja M-475925, 
-            Inscripción 1. Operador de Banca Seguros Vinculado registrado en la Dirección General de Seguros 
-            con el número de registro OV0091 mantiene un acuerdo de distribución con CASER, Compañía de 
-            Seguros y Reaseguros, S.A., entidad con domicilio en Avenida de Burgos 109, 28050 Madrid, e 
-            inscrita en el Registro Mercantil de Madrid, tomo 2245, Folio 179, Hoja M-39662, a través de 
-            su agente suscriptor Coventia Legal S.L. con CIF B56685738, sobre seguros de vida: Seguro de 
-            vida Self. Puede consultar todas las compañías aseguradoras con las que la entidad mantiene 
-            acuerdos de distribución
-          </p>
+        <div className="text-center mt-6 text-gray-500 dark:text-gray-400 text-xs">
+          © {new Date().getFullYear()} SelfBank. Todos los derechos reservados.
         </div>
       </div>
     </footer>
