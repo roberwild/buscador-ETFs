@@ -10,6 +10,7 @@ interface UseFundsParams {
   sortBy?: string;
   riskLevels?: string;
   dataSource?: string;
+  focusListFilter?: string;
 }
 
 interface UseFundsResult {
@@ -31,6 +32,7 @@ export function useFunds({
   sortBy = '',
   riskLevels = '',
   dataSource = 'fondos-gestion-activa',
+  focusListFilter = 'Todos',
 }: UseFundsParams = {}): UseFundsResult {
   const [funds, setFunds] = useState<Fund[]>([]);
   const [total, setTotal] = useState(0);
@@ -50,7 +52,8 @@ export function useFunds({
         ...(currency && { currency }),
         ...(sortBy && { sortBy }),
         ...(riskLevels && { riskLevels }),
-        dataSource
+        dataSource,
+        focusListFilter,
       });
 
       const response = await fetch(`/api/funds?${params}`);
@@ -71,7 +74,7 @@ export function useFunds({
 
   useEffect(() => {
     fetchFunds();
-  }, [page, limit, search, category, currency, sortBy, riskLevels, dataSource]);
+  }, [page, limit, search, category, currency, sortBy, riskLevels, dataSource, focusListFilter]);
 
   return {
     funds,

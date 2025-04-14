@@ -448,8 +448,8 @@ export default function Home() {
                               id="focus-yes"
                               name="focus"
                               className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                              checked={focusListFilter === 'Y'}
-                              onChange={() => setFocusListFilter('Y')}
+                              checked={focusListFilter === 'Sí'}
+                              onChange={() => setFocusListFilter('Sí')}
                             />
                             <label htmlFor="focus-yes" className="ml-2 block text-sm text-gray-700">
                               Sí
@@ -461,8 +461,8 @@ export default function Home() {
                               id="focus-no"
                               name="focus"
                               className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                              checked={focusListFilter === 'N'}
-                              onChange={() => setFocusListFilter('N')}
+                              checked={focusListFilter === 'No'}
+                              onChange={() => setFocusListFilter('No')}
                             />
                             <label htmlFor="focus-no" className="ml-2 block text-sm text-gray-700">
                               No

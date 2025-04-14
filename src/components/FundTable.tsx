@@ -10,7 +10,6 @@ export type ColumnId =
   | 'three_year_return' 
   | 'five_year_return' 
   | 'management_fee' 
-  | 'morningstar_rating'
   | 'focus_list'
   | 'factsheet_url';
 
@@ -39,7 +38,6 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'three_year_return', title: 'Rentabilidad', subTitle: '3 años', visible: true },
   { id: 'five_year_return', title: 'Rentabilidad', subTitle: '5 años', visible: true },
   { id: 'management_fee', title: 'Comisiones totales (TER)', visible: true },
-  { id: 'morningstar_rating', title: 'Rating Morningstar', visible: true },
   { id: 'focus_list', title: 'Focus List', visible: true },
   { id: 'factsheet_url', title: 'URL Ficha Comercial', visible: false },
 ];
@@ -201,7 +199,7 @@ export function FundTable({
   }));
 
   // Obtenemos los fondos
-  const { funds: allFunds, total: totalAll, totalPages, isLoading, error } = useFunds({
+  const { funds, total, totalPages, isLoading, error } = useFunds({
     page,
     limit: 10,
     search: isinSearch,
@@ -209,18 +207,9 @@ export function FundTable({
     currency: selectedCurrency,
     sortBy,
     riskLevels: selectedRiskLevels.join(','),
-    dataSource
+    dataSource,
+    focusListFilter
   });
-
-  // Filtramos por focus list si es necesario
-  const funds = allFunds.filter(fund => {
-    if (focusListFilter === 'Todos') {
-      return true;
-    }
-    return fund.focus_list === focusListFilter;
-  });
-
-  const total = focusListFilter !== 'Todos' ? funds.length : totalAll;
 
   // Reset page when filters change
   useEffect(() => {
@@ -301,7 +290,6 @@ export function FundTable({
             <option value="ytd_return">Rentabilidad año actual</option>
             <option value="one_year_return">Rentabilidad 1 año</option>
             <option value="three_year_return">Rentabilidad 3 años</option>
-            <option value="morningstar_rating">Rating Morningstar</option>
             <option value="management_fee">Comisiones TER</option>
           </select>
         </div>
@@ -397,19 +385,6 @@ export function FundTable({
               {columns.find(col => col.id === 'management_fee')?.visible && (
                 <td className="px-4 py-4 text-center">
                   <div className="text-sm font-medium text-gray-900">{fund.management_fee.toFixed(2)}%</div>
-                </td>
-              )}
-              
-              {columns.find(col => col.id === 'morningstar_rating')?.visible && (
-                <td className="px-4 py-4 text-center">
-                  <div className="flex justify-center items-center">
-                    {Array.from({ length: fund.morningstar_rating || 0 }).map((_, i) => (
-                      <span key={i} className="text-yellow-400">★</span>
-                    ))}
-                    {Array.from({ length: 5 - (fund.morningstar_rating || 0) }).map((_, i) => (
-                      <span key={i} className="text-gray-300">★</span>
-                    ))}
-                  </div>
                 </td>
               )}
 

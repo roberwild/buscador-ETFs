@@ -26,6 +26,34 @@ function parseNumericValue(value: string | undefined): number {
   return parseFloat(cleanValue) || 0;
 }
 
+// Función para normalizar los valores de focus_list
+function normalizeFocusList(value: string | undefined): string {
+  if (!value) return 'N';
+  
+  try {
+    // Eliminar caracteres no imprimibles y espacios
+    // Convertir a cadena, eliminar espacios y convertir a mayúsculas
+    let normalized = value.toString()
+                        .replace(/\s+/g, '')       // Eliminar todos los espacios
+                        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Eliminar caracteres de control
+                        .trim()
+                        .toUpperCase();
+    
+    // Depuración - registrar lo que estamos procesando
+    console.log(`Valor original: "${value}", Normalizado: "${normalized}"`);
+    
+    // Convertir a Y/N para estandarizar
+    if (['Y', 'S', 'SI', 'SÍ', 'YES', 'TRUE', '1'].includes(normalized)) {
+      return 'Y';
+    } else {
+      return 'N';
+    }
+  } catch (error) {
+    console.error(`Error al normalizar focus_list: ${error}, valor: ${value}`);
+    return 'N'; // En caso de error, asumimos 'N'
+  }
+}
+
 // Función para leer y procesar el CSV según la fuente de datos
 async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promise<Fund[]> {
   // Determinar qué archivo CSV usar
@@ -57,16 +85,42 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
   
   const fileContents = await fs.readFile(finalPath, 'utf8');
   
+  // Para depuración, mostrar las primeras líneas del CSV
+  console.log(`Primeras líneas del CSV ${csvFileName}:`);
+  console.log(fileContents.split('\n').slice(0, 3).join('\n'));
+  
   const { data } = Papa.parse(fileContents, {
     header: true,
     skipEmptyLines: true,
-    delimiter: ';'
+    delimiter: ';',
+    transformHeader: function(header) {
+      // Conservar el header exactamente como está en el CSV
+      return header.trim();
+    }
   });
+
+  // Verificar que hay datos
+  if (!data || data.length === 0) {
+    console.error(`No se pudieron cargar datos del archivo ${csvFileName}`);
+    return [];
+  }
+  
+  console.log(`Se han cargado ${data.length} registros del archivo ${csvFileName}`);
 
   // El mapeo de los datos dependerá de la estructura de cada CSV
   if (dataSource === 'etf-y-etc') {
+    // Mostrar los nombres de las columnas para depuración
+    if (data.length > 0) {
+      console.log('Nombres de columnas en ETF:', Object.keys(data[0]));
+      console.log('Primera fila de datos ETF:', data[0]);
+    }
+    
     // Mapeo específico para ETFs (podría tener campos diferentes)
-    return data.map((row: any) => {
+    return data.map((row: any, index) => {
+      // En las primeras filas, registrar los valores exactos para depuración
+      if (index < 3) {
+        console.log(`Fila ${index} valores:`, row);
+      }
       // Procesar la URL KIID - intentar diferentes posibles nombres de columna
       let kiidUrl = '';
       
@@ -102,20 +156,54 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         }
       }
       
-      // Debugging para el ISIN específico
-      if (row['ISIN'] === 'IE00BNTVVR89') {
-        console.log('IE00BNTVVR89 - URL KIID encontrada:', kiidUrl);
-        // Mostrar todas las columnas disponibles para este ISIN
-        console.log('Columnas disponibles:', Object.keys(row).join(', '));
+      // En ETFs, el valor "Focus list" es exactamente como aparece en el CSV (con l minúscula)
+      let focusList = 'N'; // Valor por defecto
+      
+      // Verificamos directamente si existe la columna "Focus list" (nombre exacto del CSV)
+      if (row['Focus list'] !== undefined) {
+        console.log(`Encontrada columna 'Focus list' con valor: '${row['Focus list']}'`);
+        focusList = normalizeFocusList(row['Focus list']);
+      } 
+      // Si no, intentamos otras variantes
+      else {
+        // Posibles nombres para la columna Focus List
+        const possibleFocusListColumns = [
+          'Focus List', 'FocusList', 'FOCUS LIST', 
+          'Focus_list', 'focus_list', 'focus-list'
+        ];
+        
+        // Buscar en todas las columnas posibles
+        for (const colName of possibleFocusListColumns) {
+          if (row[colName] !== undefined) {
+            console.log(`Encontrada columna alternativa '${colName}' con valor: '${row[colName]}'`);
+            focusList = normalizeFocusList(row[colName]);
+            break;
+          }
+        }
+        
+        // Si todavía no encontramos, buscar columnas que puedan contener Y/N
+        if (focusList === 'N') {
+          for (const key of Object.keys(row)) {
+            const value = row[key];
+            if (typeof value === 'string' && ['Y', 'N'].includes(value.trim().toUpperCase())) {
+              // Si es la primera columna, asumimos que es Focus List
+              if (Object.keys(row).indexOf(key) === 0) {
+                console.log(`Usando primera columna '${key}' con valor '${value}' como Focus List`);
+                focusList = normalizeFocusList(value);
+                break;
+              }
+            }
+          }
+        }
       }
       
       return {
         isin: row['ISIN'] || '',
         name: row['Nombre'] || '',
         currency: row['Divisa'] || '',
-        category: row['Categoria'] || row['Categoria Singular Bank'] || '',
+        category: row['Categoria'] || row['Categoría Singular Bank'] || '',
         subcategory: row['Subcategoria'] || row['Categoría Morningstar'] || '',
-        management_fee: parseNumericValue(row['Comisión Gestión'] || row['TER']),
+        management_fee: parseNumericValue(row['Comisión Gestión'] || row['TER'] || row['Gastos corrientes (%)']),
         success_fee: parseNumericValue(row['Comisión Exito'] || '0'),
         min_investment: parseNumericValue(row['Mínimo Inicial'] || '0'),
         min_investment_currency: row['Divisa'] || '',
@@ -130,16 +218,52 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         risk_level: mapRiskLevel(row['REQ'] || row['Riesgo'] || ''),
         morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
         available_for_implicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
-        focus_list: row['Focus List'] || 'N', // Añadimos el campo Focus List
+        focus_list: focusList,
       };
     });
-  } else {
-    // Mapeo original para fondos de gestión activa u otras categorías
+  } else if (dataSource === 'fondos-indexados') {
+    // Mapeo para fondos indexados, con Focus List en la cuarta posición
     return data.map((row: any) => {
       // Procesar la URL KIID - eliminar @ inicial y asegurar que es una URL válida
       let kiidUrl = '';
       if (row['URL KID PRIIPS']) {
-        // Si la URL comienza con @, eliminarlo
+        // Si la URL comienza con @, eliminarla
+        kiidUrl = row['URL KID PRIIPS'].startsWith('@') 
+          ? row['URL KID PRIIPS'].substring(1) 
+          : row['URL KID PRIIPS'];
+      }
+      
+      return {
+        isin: row['ISIN'] || '',
+        name: row['Nombre'] || '',
+        currency: row['Divisa'] || '',
+        category: row['Categoria SB'] || '',
+        subcategory: row['Categoría Morningstar'] || '',
+        management_fee: parseNumericValue(row['Comisión Gestión']),
+        success_fee: parseNumericValue(row['Comisión Exito']),
+        min_investment: parseNumericValue(row['Mínimo Inicial']),
+        min_investment_currency: row['Divisa'] || '',
+        aum: row['Patrimonio'] || '',
+        ytd_return: parseNumericValue(row['Rent YTD']),
+        one_year_return: parseNumericValue(row['Rent 12M']),
+        three_year_return: parseNumericValue(row['Rent 36M']),
+        five_year_return: parseNumericValue(row['Rent 60M']),
+        management_company: row['Gestora / Emisor'] || '',
+        factsheet_url: row['URL Ficha Comercial'] || row['URL Ficha Comercial '] || '',
+        kiid_url: kiidUrl,
+        risk_level: mapRiskLevel(row['REQ']),
+        morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
+        available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
+        focus_list: normalizeFocusList(row['Focus List']),
+      };
+    });
+  } else {
+    // Fondos de gestión activa u otras categorías, con Focus List en la tercera posición
+    return data.map((row: any) => {
+      // Procesar la URL KIID - eliminar @ inicial y asegurar que es una URL válida
+      let kiidUrl = '';
+      if (row['URL KID PRIIPS']) {
+        // Si la URL comienza con @, eliminarla
         kiidUrl = row['URL KID PRIIPS'].startsWith('@') 
           ? row['URL KID PRIIPS'].substring(1) 
           : row['URL KID PRIIPS'];
@@ -166,7 +290,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         risk_level: mapRiskLevel(row['REQ']),
         morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
         available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
-        focus_list: row['Focus List'] || 'N', // Añadimos el campo por consistencia
+        focus_list: normalizeFocusList(row['Focus List']),
       };
     });
   }
@@ -183,6 +307,7 @@ export async function GET(request: Request) {
     const sortBy = searchParams.get('sortBy') || 'ytd_return';
     const riskLevels = searchParams.get('riskLevels') || '';
     const dataSource = searchParams.get('dataSource') || 'fondos-gestion-activa';
+    const focusListFilter = searchParams.get('focusListFilter') || 'Todos';
 
     const funds = await getFundsData(dataSource);
 
@@ -221,6 +346,44 @@ export async function GET(request: Request) {
       }
     }
 
+    // Aplicar filtro de Focus List
+    if (focusListFilter && focusListFilter !== 'Todos') {
+      console.log(`Filtrando por Focus List: "${focusListFilter}"`);
+      
+      // Contar cuántos registros tienen Y/N antes del filtrado
+      const countY = filteredFunds.filter(fund => fund.focus_list === 'Y').length;
+      const countN = filteredFunds.filter(fund => fund.focus_list === 'N').length;
+      console.log(`Antes del filtro: ${countY} registros con 'Y', ${countN} registros con 'N', Total: ${filteredFunds.length}`);
+      
+      filteredFunds = filteredFunds.filter(fund => {
+        // Normalizar el valor para comparaciones más robustas
+        const normalizedFocusList = (fund.focus_list || '').toString().trim().toUpperCase();
+        
+        // Log para cada fondo
+        console.log(`Evaluando: ISIN=${fund.isin}, focus_list="${fund.focus_list}" (normalizado: "${normalizedFocusList}")`);
+        
+        let include = false;
+        if (focusListFilter === 'Sí' || focusListFilter === 'Si') {
+          include = normalizedFocusList === 'Y';
+        } else if (focusListFilter === 'No') {
+          include = normalizedFocusList === 'N' || normalizedFocusList === '';
+        } else {
+          include = true;
+        }
+        
+        if (include) {
+          console.log(`  ✓ Incluido`);
+        } else {
+          console.log(`  ✗ Excluido`);
+        }
+        
+        return include;
+      });
+      
+      // Contar después del filtrado
+      console.log(`Después del filtro: ${filteredFunds.length} registros`);
+    }
+
     // Ordenar los fondos
     filteredFunds.sort((a, b) => {
       switch (sortBy) {
@@ -230,8 +393,6 @@ export async function GET(request: Request) {
           return (b.one_year_return || 0) - (a.one_year_return || 0);
         case 'three_year_return':
           return (b.three_year_return || 0) - (a.three_year_return || 0);
-        case 'morningstar_rating':
-          return (b.morningstar_rating || 0) - (a.morningstar_rating || 0);
         case 'management_fee':
           return (b.management_fee || 0) - (a.management_fee || 0);
         default:
