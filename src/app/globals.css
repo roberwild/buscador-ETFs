@@ -51,4 +51,19 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Lynstone', sans-serif;
+}
+
+/* Animación para los paneles de filtros */
+.filter-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.filter-content.expanded {
+  max-height: 500px; /* Valor suficientemente grande para contener el contenido */
+  opacity: 1;
+  transform: translateY(0);
 } 

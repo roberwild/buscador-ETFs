@@ -350,7 +350,7 @@ export default function Home() {
                           {expandedSections.search ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
-                      {expandedSections.search && (
+                      <div className={`filter-content ${expandedSections.search ? 'expanded' : ''}`}>
                         <div className="mt-2 pb-2">
                           <input
                             type="text"
@@ -360,7 +360,7 @@ export default function Home() {
                             onChange={(e) => setIsinSearch(e.target.value)}
                           />
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Categorías - Adaptadas según la pestaña activa - con acordeón */}
@@ -374,7 +374,7 @@ export default function Home() {
                           {expandedSections.category ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
-                      {expandedSections.category && (
+                      <div className={`filter-content ${expandedSections.category ? 'expanded' : ''}`}>
                         <div className="mt-2 space-y-2 pb-2">
                           {/* Categorías para fondos de gestión activa */}
                           {activeTab === 'fondos-gestion-activa' && [
@@ -451,7 +451,7 @@ export default function Home() {
                             </label>
                           ))}
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Riesgo - con acordeón */}
@@ -465,7 +465,7 @@ export default function Home() {
                           {expandedSections.risk ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
-                      {expandedSections.risk && (
+                      <div className={`filter-content ${expandedSections.risk ? 'expanded' : ''}`}>
                         <div className="mt-2 space-y-2 pb-2">
                           {[
                             'Sin valorar',
@@ -486,7 +486,7 @@ export default function Home() {
                             </label>
                           ))}
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Divisa con acordeón */}
@@ -500,7 +500,7 @@ export default function Home() {
                           {expandedSections.currency ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
-                      {expandedSections.currency && (
+                      <div className={`filter-content ${expandedSections.currency ? 'expanded' : ''}`}>
                         <div className="mt-2 space-y-2 pb-2">
                           <div className="flex items-center">
                             <input
@@ -542,7 +542,7 @@ export default function Home() {
                             </label>
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Filtro Focus List - Disponible en todas las pestañas */}
@@ -556,7 +556,7 @@ export default function Home() {
                           {expandedSections.focusList ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
-                      {expandedSections.focusList && (
+                      <div className={`filter-content ${expandedSections.focusList ? 'expanded' : ''}`}>
                         <div className="mt-2 space-y-2 pb-2">
                           <div className="flex items-center">
                             <input
@@ -598,7 +598,7 @@ export default function Home() {
                             </label>
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Filtro Disponible para asesoramiento con cobro implícito - No disponible para ETFs */}
@@ -613,7 +613,7 @@ export default function Home() {
                             {expandedSections.implicitAdvisory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </div>
-                        {expandedSections.implicitAdvisory && (
+                        <div className={`filter-content ${expandedSections.implicitAdvisory ? 'expanded' : ''}`}>
                           <div className="mt-2 space-y-2 pb-2">
                             <div className="flex items-center">
                               <input
@@ -655,7 +655,7 @@ export default function Home() {
                               </label>
                             </div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
 
@@ -671,7 +671,7 @@ export default function Home() {
                             {expandedSections.explicitAdvisory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </div>
-                        {expandedSections.explicitAdvisory && (
+                        <div className={`filter-content ${expandedSections.explicitAdvisory ? 'expanded' : ''}`}>
                           <div className="mt-2 space-y-2 pb-2">
                             <div className="flex items-center">
                               <input
@@ -713,7 +713,7 @@ export default function Home() {
                               </label>
                             </div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
 
@@ -729,7 +729,7 @@ export default function Home() {
                             {expandedSections.hedge ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </div>
-                        {expandedSections.hedge && (
+                        <div className={`filter-content ${expandedSections.hedge ? 'expanded' : ''}`}>
                           <div className="mt-2 space-y-2 pb-2">
                             <div className="flex items-center">
                               <input
@@ -771,7 +771,7 @@ export default function Home() {
                               </label>
                             </div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
 
@@ -786,7 +786,7 @@ export default function Home() {
                           {expandedSections.dividendPolicy ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
-                      {expandedSections.dividendPolicy && (
+                      <div className={`filter-content ${expandedSections.dividendPolicy ? 'expanded' : ''}`}>
                         <div className="mt-2 space-y-2 pb-2">
                           <div className="flex items-center">
                             <input
@@ -828,7 +828,7 @@ export default function Home() {
                             </label>
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Filtro de Tipo de Réplica (solo visible en ETFs y ETCs) */}
@@ -843,7 +843,7 @@ export default function Home() {
                             {expandedSections.replicationType ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </div>
-                        {expandedSections.replicationType && (
+                        <div className={`filter-content ${expandedSections.replicationType ? 'expanded' : ''}`}>
                           <div className="mt-2 space-y-2 pb-2">
                             <div className="flex items-center">
                               <input
@@ -885,7 +885,7 @@ export default function Home() {
                               </label>
                             </div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
 
@@ -900,7 +900,7 @@ export default function Home() {
                           {expandedSections.columns ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       </div>
-                      {expandedSections.columns && (
+                      <div className={`filter-content ${expandedSections.columns ? 'expanded' : ''}`}>
                         <div className="mt-2 pb-2">
                           <div className="flex justify-between items-center mb-3">
                             <div className="flex gap-2">
@@ -977,7 +977,7 @@ export default function Home() {
                             )}
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </>
                 )}
