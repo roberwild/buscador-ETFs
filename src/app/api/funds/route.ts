@@ -59,6 +59,8 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
   // Determinar qué archivo CSV usar
   let csvFileName = 'datos-fondos.csv'; // Archivo predeterminado (compatible con el código anterior)
   
+  console.log(`Obteniendo datos para fuente: ${dataSource}`);
+  
   if (dataSource === 'fondos-gestion-activa') {
     csvFileName = 'datos-fondos-gestion-activa.csv';
   } else if (dataSource === 'etf-y-etc') {
@@ -111,8 +113,10 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
   if (dataSource === 'etf-y-etc') {
     // Mostrar los nombres de las columnas para depuración
     if (data.length > 0) {
-      console.log('Nombres de columnas en ETF:', Object.keys(data[0]));
-      console.log('Primera fila de datos ETF:', data[0]);
+      const firstRow = data[0] as Record<string, any>;
+      console.log('Nombres de columnas en ETF:', Object.keys(firstRow));
+      console.log('Primera fila de datos ETF:', firstRow);
+      console.log('Categoria en ETF:', firstRow['Categoría Singular Bank']);
     }
     
     // Mapeo específico para ETFs (podría tener campos diferentes)
@@ -201,7 +205,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         isin: row['ISIN'] || '',
         name: row['Nombre'] || '',
         currency: row['Divisa'] || '',
-        category: row['Categoria'] || row['Categoría Singular Bank'] || '',
+        category: row['Categoría Singular Bank'] || '',
         subcategory: row['Subcategoria'] || row['Categoría Morningstar'] || '',
         compartment_code: row['Código de compartimento'] || '',
         available_for_implicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
@@ -226,6 +230,12 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
     });
   } else if (dataSource === 'fondos-indexados') {
     // Mapeo para fondos indexados, con Focus List en la cuarta posición
+    if (data.length > 0) {
+      const firstRow = data[0] as Record<string, any>;
+      console.log('Nombres de columnas en fondos indexados:', Object.keys(firstRow));
+      console.log('Primera fila de datos fondos indexados:', firstRow);
+      console.log('Categoria en fondos indexados:', firstRow['Categoria SB']);
+    }
     return data.map((row: any) => {
       // Procesar la URL KIID - eliminar @ inicial y asegurar que es una URL válida
       let kiidUrl = '';
@@ -265,6 +275,12 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
     });
   } else {
     // Fondos de gestión activa u otras categorías, con Focus List en la tercera posición
+    if (data.length > 0) {
+      const firstRow = data[0] as Record<string, any>;
+      console.log('Nombres de columnas en fondos de gestión activa:', Object.keys(firstRow));
+      console.log('Primera fila de datos fondos de gestión activa:', firstRow);
+      console.log('Categoria en fondos de gestión activa:', firstRow['Categoria Singular Bank']);
+    }
     return data.map((row: any) => {
       // Procesar la URL KIID - eliminar @ inicial y asegurar que es una URL válida
       let kiidUrl = '';
@@ -279,8 +295,8 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         isin: row['ISIN'] || '',
         name: row['Nombre'] || '',
         currency: row['Divisa'] || '',
-        category: row['Categoria SB'] || '',
-        subcategory: row['Categoría Morningstar'] || '',
+        category: row['Categoria Singular Bank'] || '',
+        subcategory: row['Subcategoria'] || row['Categoría Morningstar'] || '',
         compartment_code: row['Código de compartimento'] || '',
         available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
         available_for_explicit_advisory: row['Disponible para asesoramiento con cobro explícito'] === 'Y',
@@ -319,8 +335,32 @@ export async function GET(request: Request) {
   const implicitAdvisoryFilter = searchParams.get('implicitAdvisoryFilter') || 'Todos';
   const explicitAdvisoryFilter = searchParams.get('explicitAdvisoryFilter') || 'Todos';
   const hedgeFilter = searchParams.get('hedgeFilter') || 'Todos';
+  const download = searchParams.get('download') === 'true';
 
   try {
+    // Si es una petición de descarga, devolver el archivo CSV directamente
+    if (download) {
+      let csvFileName = 'datos-fondos.csv';
+      
+      if (dataSource === 'fondos-gestion-activa') {
+        csvFileName = 'datos-fondos-gestion-activa.csv';
+      } else if (dataSource === 'etf-y-etc') {
+        csvFileName = 'datos-etf-y-etc.csv';
+      } else if (dataSource === 'fondos-indexados') {
+        csvFileName = 'datos-fondos-indexados.csv';
+      }
+
+      const csvFilePath = path.join(process.cwd(), 'src/data', csvFileName);
+      const fileContents = await fs.readFile(csvFilePath, 'utf8');
+      
+      return new NextResponse(fileContents, {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${csvFileName}"`,
+        },
+      });
+    }
+
     // Obtener y procesar todos los fondos
     let allFunds = await getFundsData(dataSource);
 
@@ -335,11 +375,24 @@ export async function GET(request: Request) {
     if (category) {
       const categories = category.split(',').filter(Boolean);
       if (categories.length > 0) {
-        allFunds = allFunds.filter(fund => 
-          categories.some(cat => 
-            fund.category.toLowerCase().startsWith(cat.toLowerCase())
-          )
-        );
+        console.log('Aplicando filtro de categoría:', categories);
+        console.log('Tipo de fondo:', dataSource);
+        console.log('Muestra de categorías disponibles:', allFunds.slice(0, 3).map(f => f.category));
+        
+        allFunds = allFunds.filter(fund => {
+          const fundCategory = fund.category || '';
+          return categories.some(cat => {
+            const fundCategoryLower = fundCategory.toLowerCase();
+            const categoryLower = cat.toLowerCase();
+            const result = fundCategoryLower.startsWith(categoryLower);
+            // Solo mostrar algunos logs para evitar sobrecargar la consola
+            if (Math.random() < 0.05) {
+              console.log(`Comparando categoría: "${fundCategory}" con "${cat}", resultado: ${result}`);
+            }
+            return result;
+          });
+        });
+        console.log(`Después del filtro de categoría: ${allFunds.length} fondos`);
       }
     }
 

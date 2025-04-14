@@ -16,7 +16,8 @@ export type ColumnId =
   | 'management_fee' 
   | 'focus_list'
   | 'factsheet_url'
-  | 'compartment_code';
+  | 'compartment_code'
+  | 'category';
 
 export interface ColumnConfig {
   id: ColumnId;
@@ -40,6 +41,7 @@ interface FundTableProps {
 
 export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'info', title: 'Fondo', visible: true },
+  { id: 'category', title: 'Categoría', visible: true },
   { id: 'implicit_advisory', title: 'Disponible para asesoramiento con cobro implícito', visible: false },
   { id: 'explicit_advisory', title: 'Disponible para asesoramiento con cobro explícito', visible: false },
   { id: 'currency', title: 'Divisa', visible: false },
@@ -460,6 +462,14 @@ export function FundTable({
                           <td key={column.id} className="px-4 py-4 text-center">
                             <div className="text-sm font-medium text-gray-900">
                               {fund.compartment_code}
+                            </div>
+                          </td>
+                        );
+                      case 'category':
+                        return (
+                          <td key={column.id} className="px-4 py-4 text-center">
+                            <div className="text-sm font-medium text-gray-900">
+                              {fund.category}
                             </div>
                           </td>
                         );

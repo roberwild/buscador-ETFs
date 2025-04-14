@@ -50,6 +50,11 @@ export function useFunds({
       setIsLoading(true);
       setError(null);
 
+      console.log('Enviando parámetros a la API:', {
+        category,
+        selectedCategories: category.split(',')
+      });
+
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
