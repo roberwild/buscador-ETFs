@@ -14,6 +14,8 @@ interface UseFundsParams {
   implicitAdvisoryFilter?: string;
   explicitAdvisoryFilter?: string;
   hedgeFilter?: string;
+  dividendPolicyFilter?: string;
+  replicationTypeFilter?: string;
 }
 
 interface UseFundsResult {
@@ -39,6 +41,8 @@ export function useFunds({
   implicitAdvisoryFilter = 'Todos',
   explicitAdvisoryFilter = 'Todos',
   hedgeFilter = 'Todos',
+  dividendPolicyFilter = 'Todos',
+  replicationTypeFilter = 'Todos',
 }: UseFundsParams = {}): UseFundsResult {
   const [funds, setFunds] = useState<Fund[]>([]);
   const [total, setTotal] = useState(0);
@@ -68,6 +72,8 @@ export function useFunds({
         implicitAdvisoryFilter,
         explicitAdvisoryFilter,
         hedgeFilter,
+        dividendPolicyFilter,
+        replicationTypeFilter,
       });
 
       const response = await fetch(`/api/funds?${params}`);
@@ -88,7 +94,7 @@ export function useFunds({
 
   useEffect(() => {
     fetchFunds();
-  }, [page, limit, search, category, currency, sortBy, riskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter]);
+  }, [page, limit, search, category, currency, sortBy, riskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter, dividendPolicyFilter, replicationTypeFilter]);
 
   return {
     funds,

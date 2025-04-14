@@ -206,11 +206,11 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         name: row['Nombre'] || '',
         currency: row['Divisa'] || '',
         category: row['Categoría Singular Bank'] || '',
-        subcategory: row['Subcategoria'] || row['Categoría Morningstar'] || '',
-        compartment_code: row['Código de compartimento'] || '',
-        available_for_implicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
-        available_for_explicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
-        hedge: row['Hedge'] || 'N', // Valor por defecto: N
+        subcategory: row['Categoría Morningstar'] || '',
+        compartment_code: '',
+        available_for_implicit_advisory: false,
+        available_for_explicit_advisory: false,
+        hedge: row['Hedge'] || 'N',
         management_fee: parseNumericValue(row['Comisión Gestión'] || row['TER'] || row['Gastos corrientes (%)']),
         success_fee: parseNumericValue(row['Comisión Exito'] || '0'),
         min_investment: parseNumericValue(row['Mínimo Inicial'] || '0'),
@@ -226,6 +226,10 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         risk_level: mapRiskLevel(row['REQ'] || row['Riesgo'] || ''),
         morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
         focus_list: focusList,
+        rating: row['Calificación'] || '',
+        maturity_range: row['Rango de vencimientos'] || '',
+        dividend_policy: row['Política de dividendos'] || '',
+        replication_type: row['Tipo de Réplica'] || '',
       };
     });
   } else if (dataSource === 'fondos-indexados') {
@@ -271,6 +275,9 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         risk_level: mapRiskLevel(row['REQ']),
         morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
         focus_list: normalizeFocusList(row['Focus List']),
+        rating: row['Calificación'] || '',
+        maturity_range: row['Rango de vencimientos'] || '',
+        dividend_policy: row['Politica de dividendos'] || ''
       };
     });
   } else {
@@ -316,6 +323,9 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         risk_level: mapRiskLevel(row['REQ']),
         morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
         focus_list: normalizeFocusList(row['Focus List']),
+        rating: row['Calificación'] || '',
+        maturity_range: row['Rango de vencimientos'] || '',
+        dividend_policy: row['Politica de dividendos'] || ''
       };
     });
   }
@@ -324,17 +334,19 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '10');
+  const limit = parseInt(searchParams.get('limit') || '20');
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
   const currency = searchParams.get('currency') || '';
-  const sortBy = searchParams.get('sortBy') || '';
+  const sortBy = searchParams.get('sortBy') || 'ytd_return';
   const riskLevels = searchParams.get('riskLevels') || '';
   const dataSource = searchParams.get('dataSource') || 'fondos-gestion-activa';
   const focusListFilter = searchParams.get('focusListFilter') || 'Todos';
   const implicitAdvisoryFilter = searchParams.get('implicitAdvisoryFilter') || 'Todos';
   const explicitAdvisoryFilter = searchParams.get('explicitAdvisoryFilter') || 'Todos';
   const hedgeFilter = searchParams.get('hedgeFilter') || 'Todos';
+  const dividendPolicyFilter = searchParams.get('dividendPolicyFilter') || 'Todos';
+  const replicationTypeFilter = searchParams.get('replicationTypeFilter') || 'Todos';
   const download = searchParams.get('download') === 'true';
 
   try {
@@ -443,6 +455,20 @@ export async function GET(request: Request) {
       allFunds = allFunds.filter(fund => 
         (fund.hedge === 'Y') === isHedged
       );
+    }
+
+    // Filtrar por política de dividendos
+    if (dividendPolicyFilter !== 'Todos') {
+      if (dividendPolicyFilter === 'Acumulación') {
+        allFunds = allFunds.filter(fund => fund.dividend_policy === 'C');
+      } else if (dividendPolicyFilter === 'Distribución') {
+        allFunds = allFunds.filter(fund => fund.dividend_policy === 'D');
+      }
+    }
+
+    // Aplicar filtro por tipo de réplica
+    if (dataSource === 'etf-y-etc' && replicationTypeFilter !== 'Todos') {
+      allFunds = allFunds.filter(fund => fund.replication_type === replicationTypeFilter);
     }
 
     // Ordenar los fondos

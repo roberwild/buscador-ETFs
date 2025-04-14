@@ -20,6 +20,8 @@ export default function Home() {
   const [implicitAdvisoryFilter, setImplicitAdvisoryFilter] = useState('Todos');
   const [explicitAdvisoryFilter, setExplicitAdvisoryFilter] = useState('Todos');
   const [hedgeFilter, setHedgeFilter] = useState('Todos');
+  const [dividendPolicyFilter, setDividendPolicyFilter] = useState('Todos');
+  const [replicationTypeFilter, setReplicationTypeFilter] = useState<'Todos' | 'Física' | 'Sintética'>('Todos');
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<ColumnId[]>(
@@ -36,7 +38,9 @@ export default function Home() {
     implicitAdvisory: true,
     explicitAdvisory: true,
     hedge: true,
-    columns: true
+    dividendPolicy: true,
+    columns: true,
+    replicationType: true
   });
 
   // Efecto para inicializar las columnas visibles
@@ -55,6 +59,7 @@ export default function Home() {
     setImplicitAdvisoryFilter('Todos')
     setExplicitAdvisoryFilter('Todos')
     setHedgeFilter('Todos')
+    setDividendPolicyFilter('Todos')
     
     // Actualizar columnas visibles según la pestaña seleccionada
     if (tab === 'etf-y-etc') {
@@ -103,6 +108,30 @@ export default function Home() {
   const handleCategoryChange = (category: string) => {
     setSelectedCategories(prev => {
       const isSelected = prev.includes(category);
+      
+      // Lógica para mostrar automáticamente las columnas de renta fija en ETFs
+      if (activeTab === 'etf-y-etc' && category === 'Renta Fija') {
+        if (!isSelected) {
+          // Si se selecciona Renta Fija, añadir las columnas de rating y maturity_range
+          setVisibleColumns(prev => {
+            // Solo añadir si no están ya incluidas
+            const newColumns = [...prev];
+            if (!prev.includes('rating')) {
+              newColumns.push('rating');
+            }
+            if (!prev.includes('maturity_range')) {
+              newColumns.push('maturity_range');
+            }
+            return newColumns;
+          });
+        } else {
+          // Si se deselecciona y no hay otras categorías seleccionadas, se pueden ocultar las columnas
+          if (prev.length === 1) {
+            setVisibleColumns(cols => cols.filter(col => col !== 'rating' && col !== 'maturity_range'));
+          }
+        }
+      }
+      
       if (isSelected) {
         return prev.filter(c => c !== category);
       } else {
@@ -175,17 +204,19 @@ export default function Home() {
     }
   };
 
-  const handleVisibilityCheck = useCallback((column: Column<Etf>) => {
+  const handleVisibilityCheck = useCallback((column: ColumnId) => {
     if (activeTab === 'fondos-gestion-activa' && (
-      column.id === 'hedge'
+      column === 'hedge'
     )) return false;
     
     if (activeTab === 'etf-y-etc' && (
-      column.id === 'compartment_code' || 
-      column.id === 'implicit_advisory' || 
-      column.id === 'explicit_advisory' ||
-      column.id === 'currency'
+      column === 'compartment_code' || 
+      column === 'implicit_advisory' || 
+      column === 'explicit_advisory' ||
+      column === 'currency'
     )) return false;
+    
+    return true;
   }, [activeTab]);
 
   return (
@@ -392,11 +423,20 @@ export default function Home() {
                           
                           {/* Categorías para ETFs */}
                           {activeTab === 'etf-y-etc' && [
+                            'Renta Fija',
+                            'Renta Variable',
                             'Índice',
                             'Sectorial',
                             'Geográfico',
                             'Materias primas',
                             'Bonos',
+                            'Monetarios',
+                            'Oro y Metales Preciosos',
+                            'Comunicaciones',
+                            'Tecnología',
+                            'Salud',
+                            'Servicios Públicos',
+                            'Energía',
                             'Apalancados',
                             'Inversos'
                           ].map(category => (
@@ -735,6 +775,120 @@ export default function Home() {
                       </div>
                     )}
 
+                    {/* Filtro de Política de dividendos */}
+                    <div className="mb-4 border-b pb-2">
+                      <div 
+                        className="flex justify-between items-center cursor-pointer py-2"
+                        onClick={() => toggleSection('dividendPolicy')}
+                      >
+                        <h3 className="font-medium">Política de dividendos</h3>
+                        <button className="text-gray-500">
+                          {expandedSections.dividendPolicy ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                      </div>
+                      {expandedSections.dividendPolicy && (
+                        <div className="mt-2 space-y-2 pb-2">
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="dividend-all"
+                              name="dividend-policy"
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              checked={dividendPolicyFilter === 'Todos'}
+                              onChange={() => setDividendPolicyFilter('Todos')}
+                            />
+                            <label htmlFor="dividend-all" className="ml-2 block text-sm text-gray-700">
+                              Todos
+                            </label>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="dividend-accumulation"
+                              name="dividend-policy"
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              checked={dividendPolicyFilter === 'Acumulación'}
+                              onChange={() => setDividendPolicyFilter('Acumulación')}
+                            />
+                            <label htmlFor="dividend-accumulation" className="ml-2 block text-sm text-gray-700">
+                              Acumulación
+                            </label>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id="dividend-distribution"
+                              name="dividend-policy"
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                              checked={dividendPolicyFilter === 'Distribución'}
+                              onChange={() => setDividendPolicyFilter('Distribución')}
+                            />
+                            <label htmlFor="dividend-distribution" className="ml-2 block text-sm text-gray-700">
+                              Distribución
+                            </label>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Filtro de Tipo de Réplica (solo visible en ETFs y ETCs) */}
+                    {activeTab === 'etf-y-etc' && (
+                      <div className="mb-4 border-b pb-2">
+                        <div 
+                          className="flex justify-between items-center cursor-pointer py-2"
+                          onClick={() => toggleSection('replicationType')}
+                        >
+                          <h3 className="font-medium">Tipo de Réplica</h3>
+                          <button className="text-gray-500">
+                            {expandedSections.replicationType ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
+                        </div>
+                        {expandedSections.replicationType && (
+                          <div className="mt-2 space-y-2 pb-2">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="replication-all"
+                                name="replication-type"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={replicationTypeFilter === 'Todos'}
+                                onChange={() => setReplicationTypeFilter('Todos')}
+                              />
+                              <label htmlFor="replication-all" className="ml-2 block text-sm text-gray-700">
+                                Todos
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="replication-fisica"
+                                name="replication-type"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={replicationTypeFilter === 'Física'}
+                                onChange={() => setReplicationTypeFilter('Física')}
+                              />
+                              <label htmlFor="replication-fisica" className="ml-2 block text-sm text-gray-700">
+                                Física
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="replication-sintetica"
+                                name="replication-type"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={replicationTypeFilter === 'Sintética'}
+                                onChange={() => setReplicationTypeFilter('Sintética')}
+                              />
+                              <label htmlFor="replication-sintetica" className="ml-2 block text-sm text-gray-700">
+                                Sintética
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Selector de columnas visibles - con acordeón */}
                     <div className="mb-4">
                       <div 
@@ -796,6 +950,31 @@ export default function Home() {
                                 />
                               </label>
                             ))}
+
+                            {/* Columnas específicas para ETFs */}
+                            {activeTab === 'etf-y-etc' && (
+                              <div className="space-y-2 mt-2 border-t pt-2">
+                                <div className="font-medium text-sm text-gray-700 mb-1">Columnas para ETFs de Renta Fija:</div>
+                                <label className="flex items-center justify-between">
+                                  <span className="text-sm">Calificación</span>
+                                  <input
+                                    type="checkbox"
+                                    className="form-checkbox h-4 w-4 text-red-600"
+                                    checked={visibleColumns.includes('rating')}
+                                    onChange={() => handleColumnToggle('rating')}
+                                  />
+                                </label>
+                                <label className="flex items-center justify-between">
+                                  <span className="text-sm">Rango de vencimientos</span>
+                                  <input
+                                    type="checkbox"
+                                    className="form-checkbox h-4 w-4 text-red-600"
+                                    checked={visibleColumns.includes('maturity_range')}
+                                    onChange={() => handleColumnToggle('maturity_range')}
+                                  />
+                                </label>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -841,6 +1020,8 @@ export default function Home() {
                 implicitAdvisoryFilter={implicitAdvisoryFilter}
                 explicitAdvisoryFilter={explicitAdvisoryFilter}
                 hedgeFilter={hedgeFilter}
+                dividendPolicyFilter={dividendPolicyFilter}
+                replicationTypeFilter={replicationTypeFilter}
               />
             </div>
           </div>

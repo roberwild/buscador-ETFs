@@ -17,7 +17,11 @@ export type ColumnId =
   | 'focus_list'
   | 'factsheet_url'
   | 'compartment_code'
-  | 'category';
+  | 'category'
+  | 'maturity_range'
+  | 'rating'
+  | 'dividend_policy'
+  | 'replication_type';
 
 export interface ColumnConfig {
   id: ColumnId;
@@ -37,6 +41,8 @@ interface FundTableProps {
   implicitAdvisoryFilter?: string;
   explicitAdvisoryFilter?: string;
   hedgeFilter?: string;
+  dividendPolicyFilter?: string;
+  replicationTypeFilter?: 'Todos' | 'Física' | 'Sintética';
 }
 
 export const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -47,11 +53,15 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'currency', title: 'Divisa', visible: false },
   { id: 'hedge', title: 'Hedge', visible: false },
   { id: 'risk_level', title: 'Riesgo', visible: true },
+  { id: 'dividend_policy', title: 'Política de dividendos', visible: true },
+  { id: 'replication_type', title: 'Tipo de Réplica', visible: false },
   { id: 'ytd_return', title: 'Rentabilidad', subTitle: '2025', visible: true },
   { id: 'one_year_return', title: 'Rentabilidad', subTitle: '1 año', visible: true },
   { id: 'three_year_return', title: 'Rentabilidad', subTitle: '3 años', visible: true },
   { id: 'five_year_return', title: 'Rentabilidad', subTitle: '5 años', visible: true },
   { id: 'management_fee', title: 'Comisiones totales (TER)', visible: true },
+  { id: 'rating', title: 'Calificación', visible: false },
+  { id: 'maturity_range', title: 'Rango de vencimientos', visible: false },
   { id: 'focus_list', title: 'Focus List', visible: true },
   { id: 'factsheet_url', title: 'URL Ficha Comercial', visible: false },
   { id: 'compartment_code', title: 'Código de compartimento', visible: false },
@@ -201,7 +211,9 @@ export function FundTable({
   focusListFilter = 'Todos',
   implicitAdvisoryFilter = 'Todos',
   explicitAdvisoryFilter = 'Todos',
-  hedgeFilter = 'Todos'
+  hedgeFilter = 'Todos',
+  dividendPolicyFilter = 'Todos',
+  replicationTypeFilter = 'Todos'
 }: FundTableProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('ytd_return');
@@ -219,7 +231,7 @@ export function FundTable({
   // Obtenemos los fondos
   const { funds, total, totalPages, isLoading, error } = useFunds({
     page,
-    limit: 10,
+    limit: 20,
     search: isinSearch,
     category: selectedCategories.join(','),
     currency: selectedCurrency,
@@ -229,13 +241,15 @@ export function FundTable({
     focusListFilter,
     implicitAdvisoryFilter,
     explicitAdvisoryFilter,
-    hedgeFilter
+    hedgeFilter,
+    dividendPolicyFilter,
+    replicationTypeFilter
   });
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter]);
+  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter, dividendPolicyFilter, replicationTypeFilter]);
 
   // Función para manejar el clic en el nombre del fondo
   const handleFundNameClick = (fund: Fund) => {
@@ -473,6 +487,40 @@ export function FundTable({
                             </div>
                           </td>
                         );
+                      case 'rating':
+                        return (
+                          <td key={column.id} className="px-4 py-4 text-center">
+                            <div className="text-sm font-medium text-gray-900">
+                              {fund.rating}
+                            </div>
+                          </td>
+                        );
+                      case 'maturity_range':
+                        return (
+                          <td key={column.id} className="px-4 py-4 text-center">
+                            <div className="text-sm font-medium text-gray-900">
+                              {fund.maturity_range}
+                            </div>
+                          </td>
+                        );
+                      case 'dividend_policy':
+                        return (
+                          <td key={column.id} className="px-4 py-4 text-center">
+                            <div className="text-sm font-medium text-gray-900">
+                              {fund.dividend_policy === 'C' ? 'Acumulación' : 
+                               fund.dividend_policy === 'D' ? 'Distribución' : 
+                               fund.dividend_policy}
+                            </div>
+                          </td>
+                        );
+                      case 'replication_type':
+                        return (
+                          <td key={column.id} className="px-4 py-4 text-center">
+                            <div className="text-sm font-medium text-gray-900">
+                              {fund.replication_type || '-'}
+                            </div>
+                          </td>
+                        );
                       default:
                         return null;
                     }
@@ -507,8 +555,8 @@ export function FundTable({
         <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-gray-700">
-              Mostrando <span className="font-medium">{((page - 1) * 10) + 1}</span> a{' '}
-              <span className="font-medium">{Math.min(page * 10, total)}</span> de{' '}
+              Mostrando <span className="font-medium">{((page - 1) * 20) + 1}</span> a{' '}
+              <span className="font-medium">{Math.min(page * 20, total)}</span> de{' '}
               <span className="font-medium">{total}</span> resultados
             </p>
           </div>

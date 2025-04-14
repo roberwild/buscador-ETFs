@@ -26,4 +26,8 @@ export interface Fund {
   morningstar_rating: number; // 0-5 stars
   sharpe_ratio?: number; // Opcional ya que no todos los fondos podrían tenerlo
   focus_list: string; // "Y" o "N"
+  rating?: string; // Calificación crediticia para ETFs de renta fija
+  maturity_range?: string; // Rango de vencimientos para ETFs de renta fija
+  dividend_policy: string; // "C" (Acumulación) o "D" (Distribución)
+  replication_type?: string; // Tipo de réplica: "Física" o "Sintética" para ETFs
 } 
