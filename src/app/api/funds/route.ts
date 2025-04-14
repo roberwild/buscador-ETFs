@@ -82,7 +82,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
       three_year_return: parseNumericValue(row['Rent 36M'] || row['Rent 3Y']),
       five_year_return: parseNumericValue(row['Rent 60M'] || row['Rent 5Y']),
       management_company: row['Gestora / Emisor'] || row['Emisor'] || '',
-      factsheet_url: row['URL Ficha Comercial'] || '',
+      factsheet_url: row['URL Ficha Comercial'] || row['URL Ficha Comercial '] || '',
       kiid_url: row['URL KID PRIIPS'] || '',
       risk_level: mapRiskLevel(row['REQ'] || row['Riesgo'] || ''),
       morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
@@ -107,14 +107,13 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
       three_year_return: parseNumericValue(row['Rent 36M']),
       five_year_return: parseNumericValue(row['Rent 60M']),
       management_company: row['Gestora / Emisor'] || '',
-      factsheet_url: row['URL Ficha Comercial'] || '',
+      factsheet_url: row['URL Ficha Comercial'] || row['URL Ficha Comercial '] || '',
       kiid_url: row['URL KID PRIIPS'] || '',
       risk_level: mapRiskLevel(row['REQ']),
       morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
       available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
       focus_list: row['Focus List'] || 'N', // Añadimos el campo por consistencia
-    }))
-    .filter(fund => fund.available_for_implicit_advisory);
+    }));
   }
 }
 

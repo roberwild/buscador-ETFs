@@ -20,7 +20,7 @@ export default function Home() {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<ColumnId[]>(
-    DEFAULT_COLUMNS.filter(col => col.visible).map(col => col.id)
+    DEFAULT_COLUMNS.filter(col => col.visible && col.id !== 'factsheet_url').map(col => col.id)
   );
   
   // Estado para el acordeón de secciones
@@ -35,7 +35,7 @@ export default function Home() {
 
   // Efecto para inicializar las columnas visibles
   useEffect(() => {
-    setVisibleColumns(DEFAULT_COLUMNS.filter(col => col.visible).map(col => col.id));
+    setVisibleColumns(DEFAULT_COLUMNS.filter(col => col.visible && col.id !== 'factsheet_url').map(col => col.id));
   }, []);
 
   // Manejar cambio de pestaña - resetear filtros
@@ -101,7 +101,12 @@ export default function Home() {
 
   const handleToggleAllColumns = (show: boolean) => {
     if (show) {
-      setVisibleColumns(DEFAULT_COLUMNS.map(col => col.id));
+      // Mostrar todas las columnas excepto factsheet_url
+      setVisibleColumns(
+        DEFAULT_COLUMNS
+          .filter(col => col.id !== 'factsheet_url')
+          .map(col => col.id)
+      );
     } else {
       // Mantener solo las columnas obligatorias
       setVisibleColumns(['info']);
@@ -501,7 +506,9 @@ export default function Home() {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            {DEFAULT_COLUMNS.map(column => (
+                            {DEFAULT_COLUMNS
+                              .filter(column => column.id !== 'factsheet_url')
+                              .map(column => (
                               <label key={column.id} className="flex items-center justify-between">
                                 <span className="text-sm">{column.title} {column.subTitle ? `(${column.subTitle})` : ''}</span>
                                 <input
@@ -509,7 +516,7 @@ export default function Home() {
                                   className="form-checkbox h-4 w-4 text-red-600"
                                   checked={visibleColumns.includes(column.id)}
                                   onChange={() => handleColumnToggle(column.id)}
-                                  disabled={column.id === 'info'} // No permitir deshabilitar la columna principal
+                                  disabled={column.id === 'info'}
                                 />
                               </label>
                             ))}

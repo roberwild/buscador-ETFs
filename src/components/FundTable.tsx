@@ -11,7 +11,8 @@ export type ColumnId =
   | 'five_year_return' 
   | 'management_fee' 
   | 'morningstar_rating'
-  | 'focus_list';
+  | 'focus_list'
+  | 'factsheet_url';
 
 export interface ColumnConfig {
   id: ColumnId;
@@ -40,6 +41,7 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'management_fee', title: 'Comisiones totales (TER)', visible: true },
   { id: 'morningstar_rating', title: 'Rating Morningstar', visible: true },
   { id: 'focus_list', title: 'Focus List', visible: true },
+  { id: 'factsheet_url', title: 'URL Ficha Comercial', visible: false },
 ];
 
 export function FundTable({ 
@@ -165,12 +167,23 @@ export function FundTable({
                 <td className="px-4 py-4 w-[440px] min-w-[440px] max-w-[440px]">
                   <div className="space-y-0.5 text-left">
                     <div className="flex justify-between items-start">
-                      <a 
-                        href={`/fondos/${fund.isin}`}
-                        className="text-[#D1472C] underline font-semibold block text-base"
-                      >
-                        {fund.name}
-                      </a>
+                      {fund.factsheet_url ? (
+                        <a 
+                          href={fund.factsheet_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#D1472C] underline font-semibold block text-base"
+                        >
+                          {fund.name}
+                        </a>
+                      ) : (
+                        <a 
+                          href={`/fondos/${fund.isin}`}
+                          className="text-[#D1472C] underline font-semibold block text-base"
+                        >
+                          {fund.name}
+                        </a>
+                      )}
                       {/* Mostramos el botón KIID según el tipo de fondo */}
                       {/* Para fondos normales, mostrar solo si tienen URL */}
                       {(dataSource !== 'etf-y-etc' && fund.kiid_url) && (
