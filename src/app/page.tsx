@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Search, Filter, X, ChevronLeft, ChevronRight, Columns, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -19,6 +19,7 @@ export default function Home() {
   const [focusListFilter, setFocusListFilter] = useState('Todos');
   const [implicitAdvisoryFilter, setImplicitAdvisoryFilter] = useState('Todos');
   const [explicitAdvisoryFilter, setExplicitAdvisoryFilter] = useState('Todos');
+  const [hedgeFilter, setHedgeFilter] = useState('Todos');
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<ColumnId[]>(
@@ -34,6 +35,7 @@ export default function Home() {
     focusList: true,
     implicitAdvisory: true,
     explicitAdvisory: true,
+    hedge: true,
     columns: true
   });
 
@@ -52,6 +54,7 @@ export default function Home() {
     setFocusListFilter('Todos')
     setImplicitAdvisoryFilter('Todos')
     setExplicitAdvisoryFilter('Todos')
+    setHedgeFilter('Todos')
     
     // Actualizar columnas visibles según la pestaña seleccionada
     if (tab === 'etf-y-etc') {
@@ -63,7 +66,7 @@ export default function Home() {
         id !== 'currency'
       ));
     } else {
-      // Si cambia a fondos, incluir compartment_code si no está ya incluido
+     
       setVisibleColumns(prev => {
         let newColumns = [...prev];
         
@@ -85,6 +88,11 @@ export default function Home() {
         // Comprobar y añadir currency si es necesario
         if (!prev.includes('currency') && DEFAULT_COLUMNS.find(col => col.id === 'currency')?.visible) {
           newColumns.push('currency');
+        }
+        
+        // Comprobar y añadir hedge si es necesario
+        if (!prev.includes('hedge') && DEFAULT_COLUMNS.find(col => col.id === 'hedge')?.visible) {
+          newColumns.push('hedge');
         }
         
         return newColumns;
@@ -166,6 +174,19 @@ export default function Home() {
       setVisibleColumns(['info']);
     }
   };
+
+  const handleVisibilityCheck = useCallback((column: Column<Etf>) => {
+    if (activeTab === 'fondos-gestion-activa' && (
+      column.id === 'hedge'
+    )) return false;
+    
+    if (activeTab === 'etf-y-etc' && (
+      column.id === 'compartment_code' || 
+      column.id === 'implicit_advisory' || 
+      column.id === 'explicit_advisory' ||
+      column.id === 'currency'
+    )) return false;
+  }, [activeTab]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -642,6 +663,64 @@ export default function Home() {
                       </div>
                     )}
 
+                    {/* Filtro Hedge - No disponible para ETFs */}
+                    {activeTab !== 'etf-y-etc' && (
+                      <div className="mb-4 border-b pb-2">
+                        <div 
+                          className="flex justify-between items-center cursor-pointer py-2"
+                          onClick={() => toggleSection('hedge')}
+                        >
+                          <h3 className="font-medium">Hedge</h3>
+                          <button className="text-gray-500">
+                            {expandedSections.hedge ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
+                        </div>
+                        {expandedSections.hedge && (
+                          <div className="mt-2 space-y-2 pb-2">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="hedge-all"
+                                name="hedge"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={hedgeFilter === 'Todos'}
+                                onChange={() => setHedgeFilter('Todos')}
+                              />
+                              <label htmlFor="hedge-all" className="ml-2 block text-sm text-gray-700">
+                                Todos
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="hedge-yes"
+                                name="hedge"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={hedgeFilter === 'Sí'}
+                                onChange={() => setHedgeFilter('Sí')}
+                              />
+                              <label htmlFor="hedge-yes" className="ml-2 block text-sm text-gray-700">
+                                Sí
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="hedge-no"
+                                name="hedge"
+                                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                                checked={hedgeFilter === 'No'}
+                                onChange={() => setHedgeFilter('No')}
+                              />
+                              <label htmlFor="hedge-no" className="ml-2 block text-sm text-gray-700">
+                                No
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Selector de columnas visibles - con acordeón */}
                     <div className="mb-4">
                       <div 
@@ -747,6 +826,7 @@ export default function Home() {
                 focusListFilter={focusListFilter}
                 implicitAdvisoryFilter={implicitAdvisoryFilter}
                 explicitAdvisoryFilter={explicitAdvisoryFilter}
+                hedgeFilter={hedgeFilter}
               />
             </div>
           </div>

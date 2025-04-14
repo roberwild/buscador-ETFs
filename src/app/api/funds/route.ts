@@ -206,6 +206,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         compartment_code: row['Código de compartimento'] || '',
         available_for_implicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
         available_for_explicit_advisory: true, // Para ETFs, asumimos que todos están disponibles
+        hedge: row['Hedge'] || 'N', // Valor por defecto: N
         management_fee: parseNumericValue(row['Comisión Gestión'] || row['TER'] || row['Gastos corrientes (%)']),
         success_fee: parseNumericValue(row['Comisión Exito'] || '0'),
         min_investment: parseNumericValue(row['Mínimo Inicial'] || '0'),
@@ -244,6 +245,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         compartment_code: row['Código de compartimento'] || '',
         available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
         available_for_explicit_advisory: row['Disponible para asesoramiento con cobro explícito'] === 'Y',
+        hedge: row['Hedge'] || 'N', // Valor por defecto: N
         management_fee: parseNumericValue(row['Comisión Gestión']),
         success_fee: parseNumericValue(row['Comisión Exito']),
         min_investment: parseNumericValue(row['Mínimo Inicial']),
@@ -282,6 +284,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         compartment_code: row['Código de compartimento'] || '',
         available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
         available_for_explicit_advisory: row['Disponible para asesoramiento con cobro explícito'] === 'Y',
+        hedge: row['Hedge'] || 'N', // Valor por defecto: N
         management_fee: parseNumericValue(row['Comisión Gestión']),
         success_fee: parseNumericValue(row['Comisión Exito']),
         min_investment: parseNumericValue(row['Mínimo Inicial']),
@@ -315,6 +318,7 @@ export async function GET(request: Request) {
   const focusListFilter = searchParams.get('focusListFilter') || 'Todos';
   const implicitAdvisoryFilter = searchParams.get('implicitAdvisoryFilter') || 'Todos';
   const explicitAdvisoryFilter = searchParams.get('explicitAdvisoryFilter') || 'Todos';
+  const hedgeFilter = searchParams.get('hedgeFilter') || 'Todos';
 
   try {
     // Obtener y procesar todos los fondos
@@ -377,6 +381,14 @@ export async function GET(request: Request) {
       const isExplicitAdvisory = explicitAdvisoryFilter === 'Sí';
       allFunds = allFunds.filter(fund => 
         fund.available_for_explicit_advisory === isExplicitAdvisory
+      );
+    }
+
+    // Aplicar filtro de hedge
+    if (hedgeFilter !== 'Todos') {
+      const isHedged = hedgeFilter === 'Sí';
+      allFunds = allFunds.filter(fund => 
+        (fund.hedge === 'Y') === isHedged
       );
     }
 

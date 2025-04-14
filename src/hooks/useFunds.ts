@@ -13,6 +13,7 @@ interface UseFundsParams {
   focusListFilter?: string;
   implicitAdvisoryFilter?: string;
   explicitAdvisoryFilter?: string;
+  hedgeFilter?: string;
 }
 
 interface UseFundsResult {
@@ -37,6 +38,7 @@ export function useFunds({
   focusListFilter = 'Todos',
   implicitAdvisoryFilter = 'Todos',
   explicitAdvisoryFilter = 'Todos',
+  hedgeFilter = 'Todos',
 }: UseFundsParams = {}): UseFundsResult {
   const [funds, setFunds] = useState<Fund[]>([]);
   const [total, setTotal] = useState(0);
@@ -60,6 +62,7 @@ export function useFunds({
         focusListFilter,
         implicitAdvisoryFilter,
         explicitAdvisoryFilter,
+        hedgeFilter,
       });
 
       const response = await fetch(`/api/funds?${params}`);
@@ -80,7 +83,7 @@ export function useFunds({
 
   useEffect(() => {
     fetchFunds();
-  }, [page, limit, search, category, currency, sortBy, riskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter]);
+  }, [page, limit, search, category, currency, sortBy, riskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter]);
 
   return {
     funds,

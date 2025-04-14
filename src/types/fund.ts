@@ -9,6 +9,7 @@ export interface Fund {
   compartment_code: string; // Código de compartimento
   available_for_implicit_advisory: boolean; // Disponible para asesoramiento con cobro implícito
   available_for_explicit_advisory: boolean; // Disponible para asesoramiento con cobro explícito
+  hedge: string; // Valor Y/N que indica si el fondo tiene cobertura de divisa
   management_fee: number;
   success_fee: number;
   min_investment: number;

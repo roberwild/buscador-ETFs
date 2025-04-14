@@ -7,6 +7,7 @@ export type ColumnId =
   | 'implicit_advisory'
   | 'explicit_advisory'
   | 'currency'
+  | 'hedge'
   | 'risk_level' 
   | 'ytd_return' 
   | 'one_year_return' 
@@ -34,6 +35,7 @@ interface FundTableProps {
   focusListFilter?: string;
   implicitAdvisoryFilter?: string;
   explicitAdvisoryFilter?: string;
+  hedgeFilter?: string;
 }
 
 export const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -41,6 +43,7 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'implicit_advisory', title: 'Disponible para asesoramiento con cobro implícito', visible: false },
   { id: 'explicit_advisory', title: 'Disponible para asesoramiento con cobro explícito', visible: false },
   { id: 'currency', title: 'Divisa', visible: false },
+  { id: 'hedge', title: 'Hedge', visible: false },
   { id: 'risk_level', title: 'Riesgo', visible: true },
   { id: 'ytd_return', title: 'Rentabilidad', subTitle: '2025', visible: true },
   { id: 'one_year_return', title: 'Rentabilidad', subTitle: '1 año', visible: true },
@@ -195,7 +198,8 @@ export function FundTable({
   visibleColumns,
   focusListFilter = 'Todos',
   implicitAdvisoryFilter = 'Todos',
-  explicitAdvisoryFilter = 'Todos'
+  explicitAdvisoryFilter = 'Todos',
+  hedgeFilter = 'Todos'
 }: FundTableProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('ytd_return');
@@ -222,13 +226,14 @@ export function FundTable({
     dataSource,
     focusListFilter,
     implicitAdvisoryFilter,
-    explicitAdvisoryFilter
+    explicitAdvisoryFilter,
+    hedgeFilter
   });
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter]);
+  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter]);
 
   // Función para manejar el clic en el nombre del fondo
   const handleFundNameClick = (fund: Fund) => {
@@ -439,6 +444,14 @@ export function FundTable({
                           <td key={column.id} className="px-4 py-4 text-center">
                             <div className="text-sm font-medium text-gray-900">
                               {fund.currency}
+                            </div>
+                          </td>
+                        );
+                      case 'hedge':
+                        return (
+                          <td key={column.id} className="px-4 py-4 text-center">
+                            <div className="text-sm font-medium text-gray-900">
+                              {fund.hedge === 'Y' ? 'Sí' : 'No'}
                             </div>
                           </td>
                         );
