@@ -353,7 +353,34 @@ export async function GET(request: Request) {
           return categories.some(cat => {
             const fundCategoryLower = fundCategory.toLowerCase();
             const categoryLower = cat.toLowerCase();
-            return fundCategoryLower.startsWith(categoryLower);
+            
+            // Caso especial para "Estados Unidos" - buscar "EEUU" o "EE.UU"
+            if (categoryLower === 'estados unidos') {
+              return fundCategoryLower.includes('eeuu') || fundCategoryLower.includes('ee.uu');
+            }
+            
+            // Caso especial para "Europa" - buscar en cualquier parte del texto
+            if (categoryLower === 'europa') {
+              return fundCategoryLower.includes('europa');
+            }
+            
+            // Caso especial para "Global" - buscar en cualquier parte del texto
+            if (categoryLower === 'global') {
+              return fundCategoryLower.includes('global');
+            }
+            
+            // Caso especial para "Gestion Alternativa" - buscar "Alternativos"
+            if (categoryLower === 'gestion alternativa') {
+              return fundCategoryLower.includes('alternativos');
+            }
+            
+            // Caso especial para "Materias Primas"
+            if (categoryLower === 'materias primas') {
+              return fundCategoryLower.includes('materias primas');
+            }
+            
+            // Para el resto de categorías, buscar el texto en cualquier parte
+            return fundCategoryLower.includes(categoryLower);
           });
         });
       }

@@ -368,7 +368,9 @@ export default function Home() {
                             'Convertibles',
                             'Inmobiliario',
                             'Materias Primas',
-                            'Otros'
+                            'Europa',
+                            'Global',
+                            'Estados Unidos'
                           ].map(category => (
                             <label key={category} className="flex items-center">
                               <input
@@ -407,20 +409,14 @@ export default function Home() {
                           {activeTab === 'etf-y-etc' && [
                             'Renta Fija',
                             'Renta Variable',
-                            'Índice',
                             'Sectorial',
-                            'Geográfico',
                             'Materias primas',
-                            'Bonos',
                             'Monetarios',
-                            'Oro y Metales Preciosos',
-                            'Comunicaciones',
-                            'Tecnología',
-                            'Salud',
-                            'Servicios Públicos',
-                            'Energía',
                             'Apalancados',
-                            'Inversos'
+                            'Inversos',
+                            'Europa',
+                            'Global',
+                            'Estados Unidos'
                           ].map(category => (
                             <label key={category} className="flex items-center">
                               <input
