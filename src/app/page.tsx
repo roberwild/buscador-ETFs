@@ -890,7 +890,7 @@ export default function Home() {
                     )}
 
                     {/* Selector de columnas visibles - con acordeón */}
-                    <div className="mb-4">
+                    <div className="mb-4 columns-selector">
                       <div 
                         className="flex justify-between items-center cursor-pointer py-2"
                         onClick={() => toggleSection('columns')}

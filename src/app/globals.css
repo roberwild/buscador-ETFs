@@ -63,7 +63,32 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .filter-content.expanded {
-  max-height: 500px; /* Valor suficientemente grande para contener el contenido */
+  max-height: 600px; /* Aumentamos el valor para contenido más extenso */
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Estilo específico para el selector de columnas visibles */
+.columns-selector .filter-content.expanded {
+  max-height: 800px; /* Mayor altura para el selector de columnas */
+  overflow-y: auto; /* Añadir scroll vertical si el contenido excede la altura */
+  scrollbar-width: thin; /* Barra de desplazamiento delgada para navegadores Firefox */
+}
+
+/* Estilo para la barra de desplazamiento en navegadores webkit (Chrome, Safari) */
+.columns-selector .filter-content.expanded::-webkit-scrollbar {
+  width: 6px;
+}
+
+.columns-selector .filter-content.expanded::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.columns-selector .filter-content.expanded::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.columns-selector .filter-content.expanded::-webkit-scrollbar-thumb:hover {
+  background: #555;
 } 
