@@ -14,7 +14,7 @@ export default function Header() {
             <Link href="/" className="flex items-center">
               <div className="relative w-[220px] h-[60px]">
                 <Image
-                  src="/images/self_bank.png"
+                  src="/images/sb-logo-n.svg"
                   alt="SelfBank by Singular Bank"
                   fill
                   style={{ objectFit: 'contain' }}
