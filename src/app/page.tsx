@@ -225,24 +225,6 @@ export default function Home() {
       
       <main className="flex-grow">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold dark:text-white">Buscador de Fondos de Inversión</h1>
-            <div className="flex items-center gap-3">
-              <Link 
-                href="/admin/upload"
-                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors text-sm sm:text-base whitespace-nowrap"
-              >
-                Administrar datos
-              </Link>
-              <Link 
-                href="https://www.selfbank.es/"
-                className="bg-[#D1472C] text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors text-sm sm:text-base whitespace-nowrap"
-              >
-                ¡EMPIEZA A OPERAR CON FONDOS YA!
-              </Link>
-            </div>
-          </div>
-          
           {/* Pestañas de navegación */}
           <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
             <nav className="-mb-px flex space-x-4 sm:space-x-8" aria-label="Tabs">

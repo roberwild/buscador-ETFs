@@ -39,9 +39,6 @@ function normalizeFocusList(value: string | undefined): string {
                         .trim()
                         .toUpperCase();
     
-    // Depuración - registrar lo que estamos procesando
-    console.log(`Valor original: "${value}", Normalizado: "${normalized}"`);
-    
     // Convertir a Y/N para estandarizar
     if (['Y', 'S', 'SI', 'SÍ', 'YES', 'TRUE', '1'].includes(normalized)) {
       return 'Y';
@@ -49,7 +46,6 @@ function normalizeFocusList(value: string | undefined): string {
       return 'N';
     }
   } catch (error) {
-    console.error(`Error al normalizar focus_list: ${error}, valor: ${value}`);
     return 'N'; // En caso de error, asumimos 'N'
   }
 }
@@ -58,8 +54,6 @@ function normalizeFocusList(value: string | undefined): string {
 async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promise<Fund[]> {
   // Determinar qué archivo CSV usar
   let csvFileName = 'datos-fondos.csv'; // Archivo predeterminado (compatible con el código anterior)
-  
-  console.log(`Obteniendo datos para fuente: ${dataSource}`);
   
   if (dataSource === 'fondos-gestion-activa') {
     csvFileName = 'datos-fondos-gestion-activa.csv';
@@ -77,7 +71,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
     await fs.access(csvFilePath);
     fileExists = true;
   } catch (error) {
-    console.warn(`Archivo ${csvFileName} no encontrado, usando datos-fondos.csv como fallback`);
     csvFileName = 'datos-fondos.csv';
   }
   
@@ -86,10 +79,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
     : path.join(process.cwd(), 'src/data', 'datos-fondos.csv');
   
   const fileContents = await fs.readFile(finalPath, 'utf8');
-  
-  // Para depuración, mostrar las primeras líneas del CSV
-  console.log(`Primeras líneas del CSV ${csvFileName}:`);
-  console.log(fileContents.split('\n').slice(0, 3).join('\n'));
   
   const { data } = Papa.parse(fileContents, {
     header: true,
@@ -103,28 +92,13 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
 
   // Verificar que hay datos
   if (!data || data.length === 0) {
-    console.error(`No se pudieron cargar datos del archivo ${csvFileName}`);
     return [];
   }
   
-  console.log(`Se han cargado ${data.length} registros del archivo ${csvFileName}`);
-
   // El mapeo de los datos dependerá de la estructura de cada CSV
   if (dataSource === 'etf-y-etc') {
-    // Mostrar los nombres de las columnas para depuración
-    if (data.length > 0) {
-      const firstRow = data[0] as Record<string, any>;
-      console.log('Nombres de columnas en ETF:', Object.keys(firstRow));
-      console.log('Primera fila de datos ETF:', firstRow);
-      console.log('Categoria en ETF:', firstRow['Categoría Singular Bank']);
-    }
-    
     // Mapeo específico para ETFs (podría tener campos diferentes)
-    return data.map((row: any, index) => {
-      // En las primeras filas, registrar los valores exactos para depuración
-      if (index < 3) {
-        console.log(`Fila ${index} valores:`, row);
-      }
+    return data.map((row: any) => {
       // Procesar la URL KIID - intentar diferentes posibles nombres de columna
       let kiidUrl = '';
       
@@ -165,7 +139,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
       
       // Verificamos directamente si existe la columna "Focus list" (nombre exacto del CSV)
       if (row['Focus list'] !== undefined) {
-        console.log(`Encontrada columna 'Focus list' con valor: '${row['Focus list']}'`);
         focusList = normalizeFocusList(row['Focus list']);
       } 
       // Si no, intentamos otras variantes
@@ -179,7 +152,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         // Buscar en todas las columnas posibles
         for (const colName of possibleFocusListColumns) {
           if (row[colName] !== undefined) {
-            console.log(`Encontrada columna alternativa '${colName}' con valor: '${row[colName]}'`);
             focusList = normalizeFocusList(row[colName]);
             break;
           }
@@ -192,7 +164,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
             if (typeof value === 'string' && ['Y', 'N'].includes(value.trim().toUpperCase())) {
               // Si es la primera columna, asumimos que es Focus List
               if (Object.keys(row).indexOf(key) === 0) {
-                console.log(`Usando primera columna '${key}' con valor '${value}' como Focus List`);
                 focusList = normalizeFocusList(value);
                 break;
               }
@@ -234,13 +205,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
       };
     });
   } else if (dataSource === 'fondos-indexados') {
-    // Mapeo para fondos indexados, con Focus List en la cuarta posición
-    if (data.length > 0) {
-      const firstRow = data[0] as Record<string, any>;
-      console.log('Nombres de columnas en fondos indexados:', Object.keys(firstRow));
-      console.log('Primera fila de datos fondos indexados:', firstRow);
-      console.log('Categoria en fondos indexados:', firstRow['Categoria SB']);
-    }
     return data.map((row: any) => {
       // Procesar la URL KIID - eliminar @ inicial y asegurar que es una URL válida
       let kiidUrl = '';
@@ -284,12 +248,6 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
     });
   } else {
     // Fondos de gestión activa u otras categorías, con Focus List en la tercera posición
-    if (data.length > 0) {
-      const firstRow = data[0] as Record<string, any>;
-      console.log('Nombres de columnas en fondos de gestión activa:', Object.keys(firstRow));
-      console.log('Primera fila de datos fondos de gestión activa:', firstRow);
-      console.log('Categoria en fondos de gestión activa:', firstRow['Categoria Singular Bank']);
-    }
     return data.map((row: any) => {
       // Procesar la URL KIID - eliminar @ inicial y asegurar que es una URL válida
       let kiidUrl = '';
@@ -390,24 +348,14 @@ export async function GET(request: Request) {
     if (category) {
       const categories = category.split(',').filter(Boolean);
       if (categories.length > 0) {
-        console.log('Aplicando filtro de categoría:', categories);
-        console.log('Tipo de fondo:', dataSource);
-        console.log('Muestra de categorías disponibles:', allFunds.slice(0, 3).map(f => f.category));
-        
         allFunds = allFunds.filter(fund => {
           const fundCategory = fund.category || '';
           return categories.some(cat => {
             const fundCategoryLower = fundCategory.toLowerCase();
             const categoryLower = cat.toLowerCase();
-            const result = fundCategoryLower.startsWith(categoryLower);
-            // Solo mostrar algunos logs para evitar sobrecargar la consola
-            if (Math.random() < 0.05) {
-              console.log(`Comparando categoría: "${fundCategory}" con "${cat}", resultado: ${result}`);
-            }
-            return result;
+            return fundCategoryLower.startsWith(categoryLower);
           });
         });
-        console.log(`Después del filtro de categoría: ${allFunds.length} fondos`);
       }
     }
 
@@ -503,7 +451,6 @@ export async function GET(request: Request) {
       limit
     });
   } catch (error) {
-    console.error('Error fetching funds:', error);
     return NextResponse.json(
       { error: 'Error fetching funds' },
       { status: 500 }
