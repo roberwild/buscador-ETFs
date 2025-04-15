@@ -45,12 +45,12 @@ export default function ExcelUploader() {
   }
 
   return (
-    <div className="w-full max-w-xl mx-auto bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-semibold mb-4">Subir archivo Excel de fondos</h2>
+    <div className="w-full max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 className="text-2xl font-semibold mb-4 text-center">Subir archivo Excel de fondos</h2>
       
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+      <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
         <div className="mb-4">
-          <Upload className="h-12 w-12 mx-auto text-gray-400" />
+          <Upload className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-300" />
           <p className="mt-2 text-sm text-gray-600">
             Arrastra y suelta el archivo Excel o haz clic para seleccionarlo
           </p>
