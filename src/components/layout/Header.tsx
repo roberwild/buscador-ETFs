@@ -12,7 +12,7 @@ export default function Header() {
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center">
-              <div className="relative w-[220px] h-[60px]">
+              <div className="relative w-[142px] h-[39px]">
                 <Image
                   src="/images/sb-logo-n.svg"
                   alt="SelfBank by Singular Bank"
