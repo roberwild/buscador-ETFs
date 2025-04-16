@@ -16,8 +16,8 @@ const legalLinks = [
 
 export default function Footer() {
   return (
-    <footer className="bg-[#333333] dark:bg-black text-white">
-      <div className="max-w-[1600px] mx-auto px-6 py-10">
+    <footer className="bg-[#333333] dark:bg-black text-white w-full">
+      <div className="w-full px-6 py-10">
         <div className="text-center mt-6 text-gray-500 dark:text-gray-400 text-xs">
           © {new Date().getFullYear()} SelfBank. Todos los derechos reservados.
         </div>
