@@ -16,6 +16,7 @@ import {
   ColumnResizeMode,
 } from '@tanstack/react-table';
 import { Search, X, GripVertical, Columns } from 'lucide-react';
+import { useColumnVisibilityStore } from '@/store/columnVisibilityStore';
 
 export type ColumnId = 
   | 'info' 
@@ -59,6 +60,7 @@ interface FundTableProps {
   hedgeFilter?: string;
   dividendPolicyFilter?: string;
   replicationTypeFilter?: 'Todos' | 'Física' | 'Sintética';
+  onColumnVisibilityChange?: (columns: ColumnId[]) => void;
 }
 
 export const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -230,7 +232,8 @@ export function FundTable({
   explicitAdvisoryFilter = 'Todos',
   hedgeFilter = 'Todos',
   dividendPolicyFilter = 'Todos',
-  replicationTypeFilter = 'Todos'
+  replicationTypeFilter = 'Todos',
+  onColumnVisibilityChange
 }: FundTableProps) {
   const [showNoFactsheetModal, setShowNoFactsheetModal] = useState(false);
   const [showNoKiidModal, setShowNoKiidModal] = useState(false);
@@ -246,13 +249,35 @@ export function FundTable({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnResizeMode, setColumnResizeMode] = useState<ColumnResizeMode>('onChange');
   const [columnSizing, setColumnSizing] = useState({});
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
   const [isColumnSelectOpen, setIsColumnSelectOpen] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [hasManualColumnChanges, setHasManualColumnChanges] = useState(false);
   
+  // Get column visibility from Zustand store
+  const {
+    visibleColumns: storeVisibleColumns,
+    setVisibleColumns: storeSetVisibleColumns,
+    toggleColumnVisibility,
+    showAllColumns,
+    hideAllColumns,
+    isColumnVisible
+  } = useColumnVisibilityStore();
+
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Use visibleColumns prop for initial setup if provided
+  useEffect(() => {
+    if (visibleColumns?.length) {
+      storeSetVisibleColumns(visibleColumns);
+    }
+  }, [visibleColumns, storeSetVisibleColumns]);
+
+  // Notify parent component of changes
+  useEffect(() => {
+    if (onColumnVisibilityChange) {
+      onColumnVisibilityChange(storeVisibleColumns);
+    }
+  }, [storeVisibleColumns, onColumnVisibilityChange]);
 
   // Monitor container width and update when resized
   useEffect(() => {
@@ -290,99 +315,20 @@ export function FundTable({
       }
     };
 
+    const handleScroll = () => {
+      if (isColumnSelectOpen) {
+        setIsColumnSelectOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll);
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [isColumnSelectOpen]);
-
-  // Initialize column visibility based on visibleColumns prop
-  useEffect(() => {
-    if (!visibleColumns || hasManualColumnChanges) return;
-    
-    const initialVisibility: Record<string, boolean> = {};
-    
-    // Start with all columns hidden
-    DEFAULT_COLUMNS.forEach(col => {
-      initialVisibility[col.id] = false;
-    });
-    
-    // Set visibility based on visibleColumns prop
-    visibleColumns.forEach(colId => {
-      initialVisibility[colId] = true;
-    });
-    
-    // Always show info column
-    initialVisibility['info'] = true;
-    
-    setColumnVisibility(initialVisibility);
-  }, [visibleColumns, hasManualColumnChanges]);
-
-  // Dynamically adjust column visibility based on available space
-  useEffect(() => {
-    if (containerWidth === 0 || !visibleColumns || hasManualColumnChanges) return;
-
-    // Map of priority for columns (lower number = higher priority)
-    const columnPriority: Record<string, number> = {
-      'info': 1, // Always show
-      'risk_level': 2,
-      'ytd_return': 3,
-      'one_year_return': 4,
-      'focus_list': 5,
-      'dividend_policy': 6,
-      'three_year_return': 7,
-      'five_year_return': 8,
-      'management_fee': 9,
-      'category': 10,
-      // Lower priority columns
-      'rating': 11,
-      'maturity_range': 12,
-      'currency': 13,
-      'hedge': 14,
-      'replication_type': 15,
-      'implicit_advisory': 16,
-      'explicit_advisory': 17,
-      'compartment_code': 18,
-      'req': 19
-    };
-
-    // Sort columns by priority
-    const sortedColumns = [...visibleColumns].sort((a, b) => 
-      (columnPriority[a] || 99) - (columnPriority[b] || 99)
-    );
-
-    // Estimate the fixed size needed for high priority columns
-    // Main info column (440px) + minimum for 2-3 important columns
-    const baseWidth = 440 + (120 * 3);
-    
-    // Available width for other columns
-    const remainingWidth = Math.max(0, containerWidth - baseWidth);
-    
-    // Average width per column (excluding main info column)
-    const avgColWidth = 120;
-    
-    // How many additional columns can we fit?
-    const additionalCols = Math.max(0, Math.floor(remainingWidth / avgColWidth));
-    
-    // Total visible columns (info column + additional columns)
-    const totalVisibleCols = 1 + additionalCols;
-    
-    // Set visibility based on priority and available space
-    const newVisibility: Record<string, boolean> = {};
-    
-    sortedColumns.forEach((col, index) => {
-      // Always show the info column
-      if (col === 'info') {
-        newVisibility[col] = true;
-        return;
-      }
-      
-      // Show columns until we hit the limit
-      newVisibility[col] = index < totalVisibleCols;
-    });
-    
-    setColumnVisibility(newVisibility);
-  }, [containerWidth, visibleColumns, hasManualColumnChanges]);
 
   // Create a query params string to detect when only sort/page changes vs filter changes
   const currentQueryParams = useMemo(() => {
@@ -450,7 +396,7 @@ export function FundTable({
     return sortField;
   }, [sorting]);
 
-  // Función para manejar el clic en el nombre del fondo
+  // Function definitions for handling events
   const handleFundNameClick = (fund: Fund) => {
     if (fund.factsheet_url) {
       // Si tiene URL de ficha comercial, abrir en nueva pestaña
@@ -462,7 +408,6 @@ export function FundTable({
     }
   };
 
-  // Función para manejar el clic en el botón KIID
   const handleKiidClick = (e: React.MouseEvent, fund: Fund) => {
     e.stopPropagation();
     
@@ -483,6 +428,7 @@ export function FundTable({
     }
   };
 
+  // Column visibility toggle handler
   // Global search filter
   const fuzzyFilter: FilterFn<Fund> = (row, columnId, value, addMeta) => {
     // Skip empty values
@@ -527,28 +473,28 @@ export function FundTable({
           maxSize: 600,
           cell: ({ row }) => {
             const fund = row.original;
-  return (
-                            <div className="space-y-0.5 text-left">
-                              <div className="flex justify-between items-start">
-                                <button 
-                                  onClick={() => handleFundNameClick(fund)}
-                                  className="text-[#D1472C] underline font-semibold block text-base text-left cursor-pointer"
-                                >
-                                  {fund.name}
-                                </button>
-                                <button 
-                                  onClick={(e) => handleKiidClick(e, fund)}
-                                  className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1 ml-2 flex-shrink-0 cursor-pointer"
-                                >
-                                  KIID
-                                </button>
-                              </div>
+            return (
+              <div className="space-y-0.5 text-left">
+                <div className="flex justify-between items-start">
+                  <button 
+                    onClick={() => handleFundNameClick(fund)}
+                    className="text-[#D1472C] underline font-semibold block text-base text-left cursor-pointer"
+                  >
+                    {fund.name}
+                  </button>
+                  <button 
+                    onClick={(e) => handleKiidClick(e, fund)}
+                    className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1 ml-2 flex-shrink-0 cursor-pointer"
+                  >
+                    KIID
+                  </button>
+                </div>
                 <div className="text-sm text-gray-900 dark:text-gray-200 text-left">
                   <span className="font-bold">ISIN:</span> <span className="font-bold">{fund.isin}</span>
                 </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.category}</div>
-                              <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.management_company}</div>
-                            </div>
+                <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.category}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.management_company}</div>
+              </div>
             );
           }
         })
@@ -641,12 +587,12 @@ export function FundTable({
               riskColor = 'bg-red-100 text-red-800';
             }
             
-                        return (
+            return (
               <div className="text-center">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor}`}>
                   {riskLevel}
                 </span>
-                            </div>
+              </div>
             );
           }
         })
@@ -676,20 +622,20 @@ export function FundTable({
             const isDistribution = value === 'D';
             
             if (isAccumulation) {
-                        return (
+              return (
                 <div className="text-center">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                     Acumulación
                   </span>
-                            </div>
-                        );
+                </div>
+              );
             } else if (isDistribution) {
-                        return (
+              return (
                 <div className="text-center">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                     Distribución
                   </span>
-                            </div>
+                </div>
               );
             }
             
@@ -725,14 +671,14 @@ export function FundTable({
             const value = info.getValue();
             const color = value >= 0 ? 'text-green-600' : 'text-red-600';
             const formattedValue = value.toFixed(2);
-                        return (
+            return (
               <div className={`text-center font-medium ${color}`}>
                 {formattedValue}%
                 {value >= 0 ? 
                   <span className="inline-block ml-1">▲</span> :
                   <span className="inline-block ml-1">▼</span>
                 }
-                            </div>
+              </div>
             );
           }
         })
@@ -754,14 +700,14 @@ export function FundTable({
             const value = info.getValue();
             const color = value >= 0 ? 'text-green-600' : 'text-red-600';
             const formattedValue = value.toFixed(2);
-                        return (
+            return (
               <div className={`text-center font-medium ${color}`}>
                 {formattedValue}%
                 {value >= 0 ? 
                   <span className="inline-block ml-1">▲</span> :
                   <span className="inline-block ml-1">▼</span>
                 }
-                            </div>
+              </div>
             );
           }
         })
@@ -783,14 +729,14 @@ export function FundTable({
             const value = info.getValue();
             const color = value >= 0 ? 'text-green-600' : 'text-red-600';
             const formattedValue = value.toFixed(2);
-                        return (
+            return (
               <div className={`text-center font-medium ${color}`}>
                 {formattedValue}%
                 {value >= 0 ? 
                   <span className="inline-block ml-1">▲</span> :
                   <span className="inline-block ml-1">▼</span>
                 }
-                            </div>
+              </div>
             );
           }
         })
@@ -812,14 +758,14 @@ export function FundTable({
             const value = info.getValue();
             const color = value >= 0 ? 'text-green-600' : 'text-red-600';
             const formattedValue = value.toFixed(2);
-                        return (
+            return (
               <div className={`text-center font-medium ${color}`}>
                 {formattedValue}%
                 {value >= 0 ? 
                   <span className="inline-block ml-1">▲</span> :
                   <span className="inline-block ml-1">▼</span>
                 }
-                            </div>
+              </div>
             );
           }
         })
@@ -842,10 +788,10 @@ export function FundTable({
             else if (value < 2.0) color = 'text-orange-600';
             else color = 'text-red-600';
             
-                        return (
+            return (
               <div className={`text-center font-medium ${color} dark:text-opacity-90`}>
                 {value.toFixed(2)}%
-                            </div>
+              </div>
             );
           }
         })
@@ -903,7 +849,7 @@ export function FundTable({
           ...standardColumnProps,
           cell: info => {
             const isFocusList = info.getValue() === 'Y';
-                        return (
+            return (
               <div className="text-center">
                 {isFocusList ? (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
@@ -912,7 +858,7 @@ export function FundTable({
                 ) : (
                   <span className="text-gray-500 dark:text-gray-400">No</span>
                 )}
-                            </div>
+              </div>
             );
           }
         })
@@ -933,6 +879,7 @@ export function FundTable({
     return cols;
   }, [visibleColumns, columnHelper]);
 
+  // Table instance with store connection
   const table = useReactTable({
     data: tableData,
     columns,
@@ -944,10 +891,20 @@ export function FundTable({
       globalFilter,
       columnFilters,
       columnSizing,
-      columnVisibility,
+      columnVisibility: storeVisibleColumns.reduce((acc, id) => {
+        acc[id] = true;
+        return acc;
+      }, {} as Record<string, boolean>),
     },
     onColumnSizingChange: setColumnSizing,
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: (updatedVisibility) => {
+      // Convert visibility object to array of visible column IDs
+      const visibleIds = Object.entries(updatedVisibility)
+        .filter(([_, isVisible]) => isVisible)
+        .map(([id]) => id as ColumnId);
+      
+      storeSetVisibleColumns(visibleIds);
+    },
     columnResizeMode,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
@@ -965,7 +922,16 @@ export function FundTable({
     columnResizeDirection: 'ltr',
   });
 
-  // Create a dropdown to toggle column visibility
+  // Function to toggle all columns (defined after table instance)
+  const handleToggleAllColumns = (show: boolean) => {
+    if (show) {
+      showAllColumns();
+    } else {
+      hideAllColumns();
+    }
+  };
+
+  // Column visibility dropdown
   const renderColumnToggle = () => {
     return (
       <div className="relative ml-2" ref={dropdownRef}>
@@ -982,10 +948,9 @@ export function FundTable({
         
         {isColumnSelectOpen && (
           <div 
-            className="fixed mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 p-2 z-50 min-w-[200px]"
+            className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 p-2 z-50 min-w-[200px] max-h-[80vh] overflow-y-auto"
             style={{
-              top: (dropdownRef.current?.getBoundingClientRect().bottom ?? 0) + window.scrollY + 5,
-              right: window.innerWidth - ((dropdownRef.current?.getBoundingClientRect().right ?? 0) + window.scrollX),
+              maxHeight: '80vh',
             }}
           >
             <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-2">
@@ -998,8 +963,7 @@ export function FundTable({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setHasManualColumnChanges(true);
-                    table.toggleAllColumnsVisible(true);
+                    handleToggleAllColumns(true);
                   }}
                 >
                   Todas
@@ -1009,11 +973,7 @@ export function FundTable({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setHasManualColumnChanges(true);
-                    // First hide all columns
-                    table.toggleAllColumnsVisible(false);
-                    // Then show only the info column
-                    table.getColumn('info')?.toggleVisibility(true);
+                    handleToggleAllColumns(false);
                   }}
                 >
                   Ninguna
@@ -1021,20 +981,22 @@ export function FundTable({
               </div>
             </div>
             
-            {table.getAllLeafColumns().map(column => {
+            {DEFAULT_COLUMNS.map(columnDef => {
               // Skip the info column as it should always be visible
-              if (column.id === 'info') return null;
+              if (columnDef.id === 'info') return null;
+              
+              // Check visibility from the store
+              const isColumnVisibleInStore = isColumnVisible(columnDef.id);
               
               return (
-                <div key={column.id} className="flex items-center py-1">
+                <div key={columnDef.id} className="flex items-center py-1">
                   <input
                     type="checkbox"
-                    checked={column.getIsVisible()}
+                    checked={isColumnVisibleInStore}
                     onChange={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setHasManualColumnChanges(true);
-                      column.toggleVisibility();
+                      toggleColumnVisibility(columnDef.id);
                     }}
                     onClick={(e) => e.stopPropagation()}
                     className="mr-2 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
@@ -1044,13 +1006,15 @@ export function FundTable({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setHasManualColumnChanges(true);
-                      column.toggleVisibility();
+                      toggleColumnVisibility(columnDef.id);
                     }}
                   >
-                    {column.columnDef.header instanceof Function 
-                      ? (column.columnDef.header as any)().props?.children[0]?.props?.children || column.id
-                      : column.columnDef.header?.toString() || column.id}
+                    {columnDef.subTitle ? (
+                      <span>
+                        {columnDef.title}
+                        <span className="text-xs text-gray-500 ml-1">({columnDef.subTitle})</span>
+                      </span>
+                    ) : columnDef.title}
                   </label>
                 </div>
               );
@@ -1065,19 +1029,19 @@ export function FundTable({
   let tableTitle = 'resultados';
 
   if (error) {
-                        return (
+    return (
       <div className="p-4 bg-red-50 text-red-700 rounded-lg">
         Error: {error}
-                            </div>
-                        );
+      </div>
+    );
   }
 
   // Only show full loading state on initial load with no previous data
   if (isInitialLoading && previousData.length === 0) {
-                        return (
+    return (
       <div className="p-4 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-                            </div>
+      </div>
     );
   }
 
@@ -1222,8 +1186,8 @@ export function FundTable({
                         )}
                       </th>
                     ))}
-                </tr>
-              ))}
+                  </tr>
+                ))}
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-600 bg-white dark:bg-gray-800">
                 {table.getRowModel().rows.length > 0 ? (
@@ -1262,9 +1226,9 @@ export function FundTable({
                     </td>
                   </tr>
                 )}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
       

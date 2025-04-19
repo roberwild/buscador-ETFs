@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer'
 import { FundTable, ColumnId, DEFAULT_COLUMNS } from '@/components/FundTable'
 import { RiskLevel } from '@/types/fund'
 import Link from 'next/link'
+import { useColumnVisibilityStore } from '@/store/columnVisibilityStore'
 
 type TabType = 'fondos-gestion-activa' | 'fondos-indexados' | 'etf-y-etc'
 
@@ -24,9 +25,17 @@ export default function Home() {
   const [replicationTypeFilter, setReplicationTypeFilter] = useState<'Todos' | 'Física' | 'Sintética'>('Todos');
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<ColumnId[]>(
-    DEFAULT_COLUMNS.filter(col => col.visible && col.id !== 'factsheet_url').map(col => col.id)
-  );
+  
+  // Get visibility state from store
+  const { 
+    visibleColumns, 
+    setVisibleColumns, 
+    toggleColumnVisibility, 
+    showAllColumns, 
+    hideAllColumns, 
+    initializeColumns,
+    updateForDataSource,
+  } = useColumnVisibilityStore();
   
   // Estado para el acordeón de secciones
   const [expandedSections, setExpandedSections] = useState({
@@ -43,10 +52,10 @@ export default function Home() {
     replicationType: true
   });
 
-  // Efecto para inicializar las columnas visibles
+  // Initialize columns on first render
   useEffect(() => {
-    setVisibleColumns(DEFAULT_COLUMNS.filter(col => col.visible && col.id !== 'factsheet_url').map(col => col.id));
-  }, []);
+    initializeColumns();
+  }, [initializeColumns]);
 
   // Manejar cambio de pestaña - resetear filtros
   const handleTabChange = (tab: TabType) => {
@@ -61,48 +70,8 @@ export default function Home() {
     setHedgeFilter('Todos')
     setDividendPolicyFilter('Todos')
     
-    // Actualizar columnas visibles según la pestaña seleccionada
-    if (tab === 'etf-y-etc') {
-      // Si cambia a ETFs, asegurarse de que compartment_code y columnas de asesoramiento no estén visibles
-      setVisibleColumns(prev => prev.filter(id => 
-        id !== 'compartment_code' && 
-        id !== 'implicit_advisory' && 
-        id !== 'explicit_advisory' &&
-        id !== 'currency'
-      ));
-    } else {
-     
-      setVisibleColumns(prev => {
-        let newColumns = [...prev];
-        
-        // Comprobar y añadir compartment_code si es necesario
-        if (!prev.includes('compartment_code') && DEFAULT_COLUMNS.find(col => col.id === 'compartment_code')?.visible) {
-          newColumns.push('compartment_code');
-        }
-        
-        // Comprobar y añadir implicit_advisory si es necesario
-        if (!prev.includes('implicit_advisory') && DEFAULT_COLUMNS.find(col => col.id === 'implicit_advisory')?.visible) {
-          newColumns.push('implicit_advisory');
-        }
-        
-        // Comprobar y añadir explicit_advisory si es necesario
-        if (!prev.includes('explicit_advisory') && DEFAULT_COLUMNS.find(col => col.id === 'explicit_advisory')?.visible) {
-          newColumns.push('explicit_advisory');
-        }
-        
-        // Comprobar y añadir currency si es necesario
-        if (!prev.includes('currency') && DEFAULT_COLUMNS.find(col => col.id === 'currency')?.visible) {
-          newColumns.push('currency');
-        }
-        
-        // Comprobar y añadir hedge si es necesario
-        if (!prev.includes('hedge') && DEFAULT_COLUMNS.find(col => col.id === 'hedge')?.visible) {
-          newColumns.push('hedge');
-        }
-        
-        return newColumns;
-      });
-    }
+    // Update column visibility for this tab type
+    updateForDataSource(tab);
   }
 
   const handleCategoryChange = (category: string) => {
@@ -113,21 +82,18 @@ export default function Home() {
       if (activeTab === 'etf-y-etc' && category === 'Renta Fija') {
         if (!isSelected) {
           // Si se selecciona Renta Fija, añadir las columnas de rating y maturity_range
-          setVisibleColumns(prev => {
-            // Solo añadir si no están ya incluidas
-            const newColumns = [...prev];
-            if (!prev.includes('rating')) {
-              newColumns.push('rating');
-            }
-            if (!prev.includes('maturity_range')) {
-              newColumns.push('maturity_range');
-            }
-            return newColumns;
-          });
+          const updatedColumns = [...visibleColumns];
+          if (!visibleColumns.includes('rating')) {
+            updatedColumns.push('rating');
+          }
+          if (!visibleColumns.includes('maturity_range')) {
+            updatedColumns.push('maturity_range');
+          }
+          setVisibleColumns(updatedColumns);
         } else {
           // Si se deselecciona y no hay otras categorías seleccionadas, se pueden ocultar las columnas
           if (prev.length === 1) {
-            setVisibleColumns(cols => cols.filter(col => col !== 'rating' && col !== 'maturity_range'));
+            setVisibleColumns(visibleColumns.filter(col => col !== 'rating' && col !== 'maturity_range'));
           }
         }
       }
@@ -169,38 +135,14 @@ export default function Home() {
 
   const handleColumnToggle = (columnId: ColumnId) => {
     if (columnId === 'info') return; // No permitir deshabilitar la columna principal
-    
-    setVisibleColumns(prev => {
-      const isVisible = prev.includes(columnId);
-      if (isVisible) {
-        return prev.filter(id => id !== columnId);
-      } else {
-        return [...prev, columnId];
-      }
-    });
+    toggleColumnVisibility(columnId);
   };
 
   const handleToggleAllColumns = (show: boolean) => {
     if (show) {
-      // Mostrar todas las columnas excepto factsheet_url
-      // y compartment_code/asesoramiento si estamos en ETFs
-      setVisibleColumns(
-        DEFAULT_COLUMNS
-          .filter(col => {
-            if (col.id === 'factsheet_url') return false;
-            if (activeTab === 'etf-y-etc' && (
-                col.id === 'compartment_code' || 
-                col.id === 'implicit_advisory' || 
-                col.id === 'explicit_advisory' ||
-                col.id === 'currency'
-              )) return false;
-            return true;
-          })
-          .map(col => col.id)
-      );
+      showAllColumns();
     } else {
-      // Mantener solo las columnas obligatorias
-      setVisibleColumns(['info']);
+      hideAllColumns();
     }
   };
 
