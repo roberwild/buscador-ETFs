@@ -1,6 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useFunds } from '@/hooks/useFunds';
 import { Fund, RiskLevel } from '@/types/fund';
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
+  FilterFn,
+  getFilteredRowModel,
+  ColumnFiltersState,
+  FilterFnOption,
+  ColumnResizeMode,
+} from '@tanstack/react-table';
+import { Search, X, GripVertical } from 'lucide-react';
 
 export type ColumnId = 
   | 'info' 
@@ -217,23 +232,69 @@ export function FundTable({
   dividendPolicyFilter = 'Todos',
   replicationTypeFilter = 'Todos'
 }: FundTableProps) {
-  const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState('ytd_return');
   const [showNoFactsheetModal, setShowNoFactsheetModal] = useState(false);
   const [showNoKiidModal, setShowNoKiidModal] = useState(false);
   const [selectedFund, setSelectedFund] = useState<{name: string, isin: string} | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'ytd_return', desc: true }]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [previousData, setPreviousData] = useState<Fund[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isChangingSort, setIsChangingSort] = useState(false);
+  const [lastQueryParams, setLastQueryParams] = useState('');
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnResizeMode, setColumnResizeMode] = useState<ColumnResizeMode>('onChange');
+  const [columnSizing, setColumnSizing] = useState({});
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  // Determinar qué columnas mostrar
-  const columns = DEFAULT_COLUMNS.map(col => ({
-    ...col,
-    // Ya no condicionamos la visibilidad de Focus List al tipo de datos
-    visible: visibleColumns ? visibleColumns.includes(col.id) : col.visible
-  }));
+  // Get sort by string for API from sorting state
+  const sortBy = useMemo(() => {
+    if (sorting.length === 0) return 'ytd_return';
+    const sortField = sorting[0].id;
+    return sortField;
+  }, [sorting]);
+
+  // Calculate actual page number for API (1-based)
+  const apiPage = currentPage + 1;
+
+  // Create a query params string to detect when only sort/page changes vs filter changes
+  const currentQueryParams = useMemo(() => {
+    return `${isinSearch}-${selectedCategories.join(',')}-${selectedCurrency}-${selectedRiskLevels.join(',')}-${dataSource}-${focusListFilter}-${implicitAdvisoryFilter}-${explicitAdvisoryFilter}-${hedgeFilter}-${dividendPolicyFilter}-${replicationTypeFilter}`;
+  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter, dividendPolicyFilter, replicationTypeFilter]);
+
+  // Global search filter
+  const fuzzyFilter: FilterFn<Fund> = (row, columnId, value, addMeta) => {
+    // Skip empty values
+    if (!value || typeof value !== 'string') return true;
+    
+    const searchLower = value.toLowerCase();
+    
+    // Search in all visible text fields
+    const fund = row.original;
+    const searchableText = [
+      fund.name, 
+      fund.isin, 
+      fund.category, 
+      fund.management_company,
+      fund.risk_level,
+      fund.dividend_policy === 'C' ? 'acumulación' : 
+        fund.dividend_policy === 'D' ? 'distribución' : fund.dividend_policy,
+      fund.replication_type || '',
+      fund.rating || '',
+      fund.maturity_range || '',
+      fund.compartment_code || '',
+      fund.focus_list === 'Y' ? 'focus list' : '',
+      fund.hedge === 'Y' ? 'hedge' : '',
+    ].filter(Boolean).join(' ').toLowerCase();
+    
+    return searchableText.includes(searchLower);
+  };
 
   // Obtenemos los fondos
   const { funds, total, totalPages, isLoading, error } = useFunds({
-    page,
-    limit: 20,
+    page: apiPage,
+    limit: pageSize,
     search: isinSearch,
     category: selectedCategories.join(','),
     currency: selectedCurrency,
@@ -248,10 +309,44 @@ export function FundTable({
     replicationTypeFilter
   });
 
-  // Reset page when filters change
+  // Detect if we're changing sort/page vs changing filters
   useEffect(() => {
-    setPage(1);
-  }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter, dividendPolicyFilter, replicationTypeFilter]);
+    const isSortingOrPaging = lastQueryParams === currentQueryParams && lastQueryParams !== '';
+    setIsChangingSort(isLoading && isSortingOrPaging);
+    
+    // Update the last query params if we have completed loading
+    if (!isLoading) {
+      setLastQueryParams(currentQueryParams);
+    }
+  }, [isLoading, currentQueryParams, lastQueryParams, sortBy, apiPage]);
+
+  // Save previous data to avoid flicker during loading
+  useEffect(() => {
+    if (!isLoading && funds.length > 0) {
+      setPreviousData(funds);
+      setIsInitialLoading(false);
+    }
+  }, [isLoading, funds]);
+
+  // Detect when filters change (not just sort/page)
+  useEffect(() => {
+    // When actual filters change (not just sorting or pagination)
+    if (lastQueryParams !== '' && lastQueryParams !== currentQueryParams) {
+      setCurrentPage(0);
+      setIsInitialLoading(true);
+    }
+  }, [currentQueryParams, lastQueryParams]);
+
+  // The actual data to display
+  // - Use previous data during sort/page transitions
+  // - Use current data when it's loaded
+  // - Prevent showing empty array by falling back to previous data if current is empty
+  const tableData = useMemo(() => {
+    if (isChangingSort) {
+      return previousData;
+    }
+    return funds.length > 0 ? funds : (isInitialLoading ? [] : previousData);
+  }, [funds, previousData, isChangingSort, isInitialLoading]);
 
   // Función para manejar el clic en el nombre del fondo
   const handleFundNameClick = (fund: Fund) => {
@@ -268,9 +363,6 @@ export function FundTable({
   // Función para manejar el clic en el botón KIID
   const handleKiidClick = (e: React.MouseEvent, fund: Fund) => {
     e.stopPropagation();
-    
-    // Para depuración
-    console.log(`KIID click for ${fund.isin}:`, fund.kiid_url);
     
     if (fund.kiid_url && fund.kiid_url.trim() !== '') {
       // Si tiene URL de KIID, abrir en nueva pestaña
@@ -289,6 +381,458 @@ export function FundTable({
     }
   };
 
+  const columnHelper = createColumnHelper<Fund>();
+
+  // Create columns based on visible columns with default sizes
+  const columns = useMemo(() => {
+    const cols: any[] = [];
+
+    if (visibleColumns?.includes('info') || true) { // Always include info column
+      cols.push(
+        columnHelper.accessor('name', {
+          id: 'info',
+          header: 'Fondo',
+          size: 440,
+          minSize: 250,
+          maxSize: 600,
+          cell: ({ row }) => {
+            const fund = row.original;
+            return (
+              <div className="space-y-0.5 text-left">
+                <div className="flex justify-between items-start">
+                  <button 
+                    onClick={() => handleFundNameClick(fund)}
+                    className="text-[#D1472C] underline font-semibold block text-base text-left cursor-pointer"
+                  >
+                    {fund.name}
+                  </button>
+                  <button 
+                    onClick={(e) => handleKiidClick(e, fund)}
+                    className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1 ml-2 flex-shrink-0 cursor-pointer"
+                  >
+                    KIID
+                  </button>
+                </div>
+                <div className="text-sm text-gray-900 dark:text-gray-200 text-left">
+                  <span className="font-bold">ISIN:</span> <span className="font-bold">{fund.isin}</span>
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.category}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.management_company}</div>
+              </div>
+            );
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('category')) {
+      cols.push(
+        columnHelper.accessor('category', {
+          header: 'Categoría',
+          size: 140,
+          minSize: 100,
+          maxSize: 300,
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        })
+      );
+    }
+
+    // Add minSize and maxSize to all other columns
+    // Defining standard sizes for each column type
+    const standardColumnProps = {
+      minSize: 100,
+      maxSize: 300,
+    };
+
+    if (visibleColumns?.includes('implicit_advisory')) {
+      cols.push(
+        columnHelper.accessor('available_for_implicit_advisory', {
+          header: 'Disponible para asesoramiento con cobro implícito',
+          size: 200,
+          ...standardColumnProps,
+          cell: info => <div className="text-center">{info.getValue() ? 'Sí' : 'No'}</div>
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('explicit_advisory')) {
+      cols.push(
+        columnHelper.accessor('available_for_explicit_advisory', {
+          header: 'Disponible para asesoramiento con cobro explícito',
+          size: 200,
+          ...standardColumnProps,
+          cell: info => <div className="text-center">{info.getValue() ? 'Sí' : 'No'}</div>
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('currency')) {
+      cols.push(
+        columnHelper.accessor('currency', {
+          header: 'Divisa',
+          size: 100,
+          ...standardColumnProps,
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('hedge')) {
+      cols.push(
+        columnHelper.accessor('hedge', {
+          header: 'Hedge',
+          size: 100,
+          ...standardColumnProps,
+          cell: info => <div className="text-center">{info.getValue() === 'Y' ? 'Sí' : 'No'}</div>
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('risk_level')) {
+      cols.push(
+        columnHelper.accessor('risk_level', {
+          header: 'Riesgo',
+          size: 140,
+          ...standardColumnProps,
+          cell: info => {
+            const riskLevel = info.getValue();
+            let riskColor = 'bg-gray-100 text-gray-700';
+            
+            // Assign colors based on risk level
+            if (riskLevel === 'Riesgo bajo') {
+              riskColor = 'bg-green-100 text-green-800';
+            } else if (riskLevel === 'Riesgo moderado') {
+              riskColor = 'bg-blue-100 text-blue-800';
+            } else if (riskLevel === 'Riesgo medio-alto') {
+              riskColor = 'bg-yellow-100 text-yellow-800';
+            } else if (riskLevel === 'Riesgo alto') {
+              riskColor = 'bg-orange-100 text-orange-800';
+            } else if (riskLevel === 'Riesgo muy alto') {
+              riskColor = 'bg-red-100 text-red-800';
+            }
+            
+            return (
+              <div className="text-center">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor}`}>
+                  {riskLevel}
+                </span>
+              </div>
+            );
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('req')) {
+      cols.push(
+        columnHelper.accessor('req', {
+          header: 'REQ',
+          size: 100,
+          ...standardColumnProps,
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('dividend_policy')) {
+      cols.push(
+        columnHelper.accessor('dividend_policy', {
+          header: 'Política de dividendos',
+          size: 200,
+          ...standardColumnProps,
+          cell: info => {
+            const value = info.getValue();
+            const isAccumulation = value === 'C';
+            const isDistribution = value === 'D';
+            
+            if (isAccumulation) {
+              return (
+                <div className="text-center">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    Acumulación
+                  </span>
+                </div>
+              );
+            } else if (isDistribution) {
+              return (
+                <div className="text-center">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    Distribución
+                  </span>
+                </div>
+              );
+            }
+            
+            return <div className="text-center">{value}</div>;
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('replication_type')) {
+      cols.push(
+        columnHelper.accessor('replication_type', {
+          header: 'Tipo de Réplica',
+          size: 140,
+          ...standardColumnProps,
+          cell: info => <div className="text-center">{info.getValue() || '-'}</div>
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('ytd_return')) {
+      cols.push(
+        columnHelper.accessor('ytd_return', {
+          header: () => (
+            <div>
+              <div>Rentabilidad</div>
+              <div className="text-xs">2025</div>
+            </div>
+          ),
+          size: 120,
+          ...standardColumnProps,
+          cell: info => {
+            const value = info.getValue();
+            const color = value >= 0 ? 'text-green-600' : 'text-red-600';
+            const formattedValue = value.toFixed(2);
+            return (
+              <div className={`text-center font-medium ${color}`}>
+                {formattedValue}%
+                {value >= 0 ? 
+                  <span className="inline-block ml-1">▲</span> :
+                  <span className="inline-block ml-1">▼</span>
+                }
+              </div>
+            );
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('one_year_return')) {
+      cols.push(
+        columnHelper.accessor('one_year_return', {
+          header: () => (
+            <div>
+              <div>Rentabilidad</div>
+              <div className="text-xs">1 año</div>
+            </div>
+          ),
+          size: 120,
+          ...standardColumnProps,
+          cell: info => {
+            const value = info.getValue();
+            const color = value >= 0 ? 'text-green-600' : 'text-red-600';
+            const formattedValue = value.toFixed(2);
+            return (
+              <div className={`text-center font-medium ${color}`}>
+                {formattedValue}%
+                {value >= 0 ? 
+                  <span className="inline-block ml-1">▲</span> :
+                  <span className="inline-block ml-1">▼</span>
+                }
+              </div>
+            );
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('three_year_return')) {
+      cols.push(
+        columnHelper.accessor('three_year_return', {
+          header: () => (
+            <div>
+              <div>Rentabilidad</div>
+              <div className="text-xs">3 años</div>
+            </div>
+          ),
+          size: 120,
+          ...standardColumnProps,
+          cell: info => {
+            const value = info.getValue();
+            const color = value >= 0 ? 'text-green-600' : 'text-red-600';
+            const formattedValue = value.toFixed(2);
+            return (
+              <div className={`text-center font-medium ${color}`}>
+                {formattedValue}%
+                {value >= 0 ? 
+                  <span className="inline-block ml-1">▲</span> :
+                  <span className="inline-block ml-1">▼</span>
+                }
+              </div>
+            );
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('five_year_return')) {
+      cols.push(
+        columnHelper.accessor('five_year_return', {
+          header: () => (
+            <div>
+              <div>Rentabilidad</div>
+              <div className="text-xs">5 años</div>
+            </div>
+          ),
+          size: 120,
+          ...standardColumnProps,
+          cell: info => {
+            const value = info.getValue();
+            const color = value >= 0 ? 'text-green-600' : 'text-red-600';
+            const formattedValue = value.toFixed(2);
+            return (
+              <div className={`text-center font-medium ${color}`}>
+                {formattedValue}%
+                {value >= 0 ? 
+                  <span className="inline-block ml-1">▲</span> :
+                  <span className="inline-block ml-1">▼</span>
+                }
+              </div>
+            );
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('management_fee')) {
+      cols.push(
+        columnHelper.accessor('management_fee', {
+          header: 'Comisiones totales (TER)',
+          size: 140,
+          ...standardColumnProps,
+          cell: info => {
+            const value = info.getValue();
+            // Apply color gradient based on fee amount
+            let color = 'text-gray-900';
+            if (value < 0.5) color = 'text-green-600';
+            else if (value < 1.0) color = 'text-emerald-600';
+            else if (value < 1.5) color = 'text-amber-600';
+            else if (value < 2.0) color = 'text-orange-600';
+            else color = 'text-red-600';
+            
+            return (
+              <div className={`text-center font-medium ${color} dark:text-opacity-90`}>
+                {value.toFixed(2)}%
+              </div>
+            );
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('rating')) {
+      cols.push(
+        columnHelper.accessor('rating', {
+          header: 'Calificación',
+          size: 140,
+          ...standardColumnProps,
+          cell: info => {
+            const rating = info.getValue();
+            if (!rating) return <div className="text-center text-gray-400">-</div>;
+            
+            // Apply styles based on credit rating
+            let badgeClass = 'text-xs font-medium px-2.5 py-0.5 rounded';
+            
+            // Investment grade
+            if(['AAA', 'AA+', 'AA', 'AA-', 'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-'].includes(rating)) {
+              badgeClass += ' bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+            } 
+            // Non-investment grade
+            else if(['BB+', 'BB', 'BB-', 'B+', 'B', 'B-'].includes(rating)) {
+              badgeClass += ' bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+            }
+            // Highly speculative
+            else {
+              badgeClass += ' bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+            }
+            
+            return <div className="text-center"><span className={badgeClass}>{rating}</span></div>;
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('maturity_range')) {
+      cols.push(
+        columnHelper.accessor('maturity_range', {
+          header: 'Rango de vencimientos',
+          size: 140,
+          ...standardColumnProps,
+          cell: info => <div className="text-center">{info.getValue() || '-'}</div>
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('focus_list')) {
+      cols.push(
+        columnHelper.accessor('focus_list', {
+          header: 'Focus List',
+          size: 140,
+          ...standardColumnProps,
+          cell: info => {
+            const isFocusList = info.getValue() === 'Y';
+            return (
+              <div className="text-center">
+                {isFocusList ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                    Sí
+                  </span>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400">No</span>
+                )}
+              </div>
+            );
+          }
+        })
+      );
+    }
+
+    if (visibleColumns?.includes('compartment_code')) {
+      cols.push(
+        columnHelper.accessor('compartment_code', {
+          header: 'Código de compartimento',
+          size: 140,
+          ...standardColumnProps,
+          cell: info => <div className="text-center">{info.getValue()}</div>
+        })
+      );
+    }
+
+    return cols;
+  }, [visibleColumns, columnHelper]);
+
+  const table = useReactTable({
+    data: tableData,
+    columns,
+    filterFns: {
+      fuzzy: fuzzyFilter,
+    },
+    state: {
+      sorting,
+      globalFilter,
+      columnFilters,
+      columnSizing,
+    },
+    onColumnSizingChange: setColumnSizing,
+    columnResizeMode,
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
+    globalFilterFn: fuzzyFilter,
+    manualPagination: true,
+    pageCount: totalPages,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onSortingChange: (updater) => {
+      setSorting(updater);
+    },
+    debugTable: true,
+    enableColumnResizing: true,
+    columnResizeDirection: 'ltr',
+  });
+
   if (error) {
     return (
       <div className="p-4 bg-red-50 text-red-700 rounded-lg">
@@ -297,7 +841,8 @@ export function FundTable({
     );
   }
 
-  if (isLoading) {
+  // Only show full loading state on initial load with no previous data
+  if (isInitialLoading && previousData.length === 0) {
     return (
       <div className="p-4 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
@@ -315,248 +860,206 @@ export function FundTable({
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-medium text-gray-900 dark:text-white">{total.toLocaleString()} {tableTitle}</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex-1 w-full sm:w-auto max-w-lg">
+          <div className="relative">
+            <input
+              type="text"
+              value={globalFilter ?? ''}
+              onChange={e => setGlobalFilter(e.target.value)}
+              className="pl-10 pr-10 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
+                         focus:border-red-500 focus:ring-1 focus:ring-red-500 
+                         bg-white dark:bg-gray-700 dark:text-white"
+              placeholder="Buscar en la tabla..."
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            {globalFilter && (
+              <button 
+                onClick={() => setGlobalFilter('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {globalFilter && (
+              <span>
+                {table.getFilteredRowModel().rows.length} resultado{table.getFilteredRowModel().rows.length !== 1 ? 's' : ''} encontrado{table.getFilteredRowModel().rows.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2 ml-auto">
+          <h2 className="text-2xl font-medium text-gray-900 dark:text-white hidden sm:block">{total.toLocaleString()} {tableTitle}</h2>
+        </div>
+
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-600 dark:text-gray-300">Ordenar por</span>
           <select 
             className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm min-w-[200px] dark:bg-gray-800 dark:text-white"
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            onChange={(e) => {
+              const newSortField = e.target.value;
+              setSorting([{ id: newSortField, desc: true }]);
+            }}
+            disabled={isLoading} // Prevent changing sort while loading
           >
             <option value="ytd_return">Rentabilidad año actual</option>
             <option value="one_year_return">Rentabilidad 1 año</option>
             <option value="three_year_return">Rentabilidad 3 años</option>
             <option value="management_fee">Comisiones TER</option>
           </select>
+          {isLoading && (
+            <div className="ml-2 animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
+          )}
         </div>
       </div>
+      
+      {/* Mobile title - only visible on small screens */}
+      <div className="sm:hidden mb-4">
+        <h2 className="text-xl font-medium text-gray-900 dark:text-white">{total.toLocaleString()} {tableTitle}</h2>
+      </div>
+        
+      {/* Always show the table container even when loading */}
       <div className="relative overflow-hidden shadow-md sm:rounded-lg mb-6">
-        <div className="overflow-x-auto pb-3" style={{ 
-          maxWidth: '100%',
-          scrollbarWidth: 'thin', 
-          scrollbarColor: '#d1d5db #f3f4f6',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          <table className="min-w-full table-fixed">
-            <thead className="bg-gray-200 dark:bg-gray-700">
-              <tr>
-                {columns.filter(col => col.visible).map((column) => (
-                  <th 
-                    key={column.id}
-                    className={`px-4 py-2 ${column.id === 'info' ? 'text-left' : 'text-center'} text-sm font-medium text-gray-700 dark:text-gray-200 ${
-                      column.id === 'info' ? 'w-[440px] min-w-[440px] max-w-[440px]' : ''
-                    }`}
-                    colSpan={column.id === 'ytd_return' || column.id === 'one_year_return' || column.id === 'three_year_return' || column.id === 'five_year_return' ? 1 : undefined}
-                  >
-                    {column.title}
-                  </th>
+        {/* Use more visible loading overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/40 dark:bg-gray-800/40 backdrop-blur-[1px] z-[5] pointer-events-none flex items-center justify-center">
+            {isInitialLoading && (
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-700 dark:border-gray-300"></div>
+            )}
+          </div>
+        )}
+
+        <div 
+          className="overflow-x-auto pb-3" 
+          style={{ 
+            maxWidth: '100%',
+            scrollbarWidth: 'thin', 
+            scrollbarColor: '#d1d5db #f3f4f6',
+            WebkitOverflowScrolling: 'touch'
+          }}
+          ref={tableContainerRef}
+        >
+          <div className="relative">
+            <table 
+              className="min-w-full border-separate border-spacing-0"
+              style={{ width: table.getCenterTotalSize() }}
+            >
+              <thead className="bg-gray-100 dark:bg-gray-700">
+                {table.getHeaderGroups().map(headerGroup => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <th 
+                        key={header.id}
+                        className={`
+                          sticky top-0 z-10
+                          px-4 py-3 
+                          ${header.id.includes('info') ? 'text-left' : 'text-center'} 
+                          text-sm font-medium text-gray-700 dark:text-gray-200
+                          border-b border-gray-200 dark:border-gray-600
+                          border-r border-gray-200 dark:border-gray-600
+                          bg-gray-100 dark:bg-gray-700
+                          relative
+                          group
+                        `}
+                        style={{
+                          width: header.getSize(),
+                          position: 'relative',
+                        }}
+                        colSpan={header.colSpan}
+                      >
+                        <div className="flex items-center justify-between h-full">
+                          <div 
+                            className={`${!header.id.includes('info') ? 'mx-auto' : ''} truncate`}
+                            onClick={header.column.getToggleSortingHandler()}
+                            style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default' }}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {header.column.getCanSort() && (
+                              <span className="ml-1">
+                                {{
+                                  asc: <span className="text-slate-700 dark:text-slate-300">↑</span>,
+                                  desc: <span className="text-slate-700 dark:text-slate-300">↓</span>,
+                                }[header.column.getIsSorted() as string] ?? 
+                                (header.column.getCanSort() ? <span className="text-slate-400 dark:text-slate-500">⇅</span> : null)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {header.column.getCanResize() && (
+                          <div
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            className="absolute top-0 right-0 h-full w-2 cursor-col-resize select-none touch-none z-10"
+                          >
+                            <div className="absolute right-0 h-full w-px bg-gray-300 dark:bg-gray-600 opacity-100"></div>
+                          </div>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-              {/* Subtítulos para columnas de rentabilidad */}
-              <tr>
-                {columns.filter(col => col.visible).map((column) => (
-                  <th 
-                    key={`sub-${column.id}`}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-center text-xs text-gray-700 dark:text-gray-200"
-                  >
-                    {column.subTitle || ''}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
-              {funds.map((fund, index) => (
-                <tr key={fund.isin} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700' : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'}>
-                  {columns.filter(col => col.visible).map(column => {
-                    switch(column.id) {
-                      case 'info':
-                        return (
-                          <td key={column.id} className="px-4 py-4 w-[440px] min-w-[440px] max-w-[440px]">
-                            <div className="space-y-0.5 text-left">
-                              <div className="flex justify-between items-start">
-                                <button 
-                                  onClick={() => handleFundNameClick(fund)}
-                                  className="text-[#D1472C] underline font-semibold block text-base text-left cursor-pointer"
-                                  style={{ textAlign: 'left' }}
-                                >
-                                  {fund.name}
-                                </button>
-                                <button 
-                                  onClick={(e) => handleKiidClick(e, fund)}
-                                  className="text-[#D1472C] border border-[#D1472C] rounded px-2 py-1 ml-2 flex-shrink-0 cursor-pointer"
-                                >
-                                  KIID
-                                </button>
-                              </div>
-                              <div className="text-sm text-gray-900 dark:text-gray-200 text-left"><span className="font-bold">ISIN:</span> <span className="font-bold">{fund.isin}</span></div>
-                              <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.category}</div>
-                              <div className="text-sm text-gray-500 dark:text-gray-300 text-left">{fund.management_company}</div>
-                            </div>
-                          </td>
-                        );
-                      case 'risk_level':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.risk_level}
-                            </div>
-                          </td>
-                        );
-                      case 'ytd_return':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.ytd_return.toFixed(2)}%</div>
-                          </td>
-                        );
-                      case 'one_year_return':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.one_year_return.toFixed(2)}%</div>
-                          </td>
-                        );
-                      case 'three_year_return':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.three_year_return.toFixed(2)}%</div>
-                          </td>
-                        );
-                      case 'five_year_return':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.five_year_return.toFixed(2)}%</div>
-                          </td>
-                        );
-                      case 'management_fee':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{fund.management_fee.toFixed(2)}%</div>
-                          </td>
-                        );
-                      case 'focus_list':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.focus_list === 'Y' ? 'Sí' : 'No'}
-                            </div>
-                          </td>
-                        );
-                      case 'implicit_advisory':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.available_for_implicit_advisory ? 'Sí' : 'No'}
-                            </div>
-                          </td>
-                        );
-                      case 'explicit_advisory':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.available_for_explicit_advisory ? 'Sí' : 'No'}
-                            </div>
-                          </td>
-                        );
-                      case 'currency':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.currency}
-                            </div>
-                          </td>
-                        );
-                      case 'hedge':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.hedge === 'Y' ? 'Sí' : 'No'}
-                            </div>
-                          </td>
-                        );
-                      case 'compartment_code':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.compartment_code}
-                            </div>
-                          </td>
-                        );
-                      case 'category':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.category}
-                            </div>
-                          </td>
-                        );
-                      case 'rating':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.rating}
-                            </div>
-                          </td>
-                        );
-                      case 'maturity_range':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.maturity_range}
-                            </div>
-                          </td>
-                        );
-                      case 'dividend_policy':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.dividend_policy === 'C' ? 'Acumulación' : 
-                               fund.dividend_policy === 'D' ? 'Distribución' : 
-                               fund.dividend_policy}
-                            </div>
-                          </td>
-                        );
-                      case 'replication_type':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.replication_type || '-'}
-                            </div>
-                          </td>
-                        );
-                      case 'req':
-                        return (
-                          <td key={column.id} className="px-4 py-4 text-center">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                              {fund.req}
-                            </div>
-                          </td>
-                        );
-                      default:
-                        return null;
-                    }
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="sticky bottom-0 left-0 right-0 h-2 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-          <div className="h-full w-full overflow-x-scroll" aria-hidden="true"></div>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-600 bg-white dark:bg-gray-800">
+                {table.getRowModel().rows.length > 0 ? (
+                  table.getRowModel().rows.map((row, index) => (
+                    <tr 
+                      key={row.id} 
+                      className={`
+                        ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} 
+                        hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150
+                        ${(row.original.focus_list === 'Y') ? 'ring-1 ring-inset ring-purple-100 dark:ring-purple-900' : ''}
+                      `}
+                    >
+                      {row.getVisibleCells().map(cell => (
+                        <td 
+                          key={cell.id}
+                          className={`
+                            px-4 py-4 
+                            ${cell.column.id.includes('info') ? 'text-left' : 'text-center'} 
+                            border-b border-gray-100 dark:border-gray-700
+                            border-r border-gray-100 dark:border-gray-700
+                          `}
+                          style={{
+                            width: cell.column.getSize(),
+                            maxWidth: cell.column.getSize(),
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={table.getAllColumns().length} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                      {globalFilter ? 'No se encontraron resultados para esta búsqueda' : 'No se encontraron fondos que coincidan con los criterios de búsqueda'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
       
       <div className="mt-6 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 sm:px-6">
         <div className="flex flex-1 justify-between sm:hidden">
           <button
-            onClick={() => setPage(page > 1 ? page - 1 : 1)}
-            disabled={page === 1}
+            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+            disabled={currentPage === 0}
             className="relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Anterior
           </button>
           <button
-            onClick={() => setPage(page < totalPages ? page + 1 : totalPages)}
-            disabled={page === totalPages}
+            onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+            disabled={currentPage === totalPages - 1}
             className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Siguiente
@@ -566,10 +1069,10 @@ export function FundTable({
           <div>
             <p className="text-sm text-gray-700 dark:text-gray-300">
               Mostrando <span className="font-medium">
-                {((page - 1) * 20) + 1}
+                {currentPage * pageSize + 1}
               </span> a{' '}
               <span className="font-medium">
-                {Math.min(page * 20, total)}
+                {Math.min((currentPage + 1) * pageSize, total)}
               </span> de{' '}
               <span className="font-medium">{total}</span> resultados
             </p>
@@ -577,8 +1080,8 @@ export function FundTable({
           <div>
             <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
               <button
-                onClick={() => setPage(page > 1 ? page - 1 : 1)}
-                disabled={page === 1}
+                onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                disabled={currentPage === 0}
                 className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
               >
                 <span className="sr-only">Anterior</span>
@@ -590,33 +1093,33 @@ export function FundTable({
                 let pageNum;
                 // Mostrar 5 páginas centradas en la actual si es posible
                 if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (page <= 3) {
-                  pageNum = i + 1;
-                } else if (page >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
+                  pageNum = i;
+                } else if (currentPage <= 2) {
+                  pageNum = i;
+                } else if (currentPage >= totalPages - 3) {
+                  pageNum = totalPages - 5 + i;
                 } else {
-                  pageNum = page - 2 + i;
+                  pageNum = currentPage - 2 + i;
                 }
 
                 return (
                   <button
                     key={pageNum}
-                    onClick={() => setPage(pageNum)}
+                    onClick={() => setCurrentPage(pageNum)}
                     className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                      page === pageNum
+                      currentPage === pageNum
                         ? 'z-10 bg-gray-900 dark:bg-red-700 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-700'
                         : 'text-gray-900 dark:text-gray-200 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0'
                     }`}
                   >
-                    {pageNum}
+                    {pageNum + 1}
                   </button>
                 );
               })}
 
               <button
-                onClick={() => setPage(page < totalPages ? page + 1 : totalPages)}
-                disabled={page === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                disabled={currentPage === totalPages - 1}
                 className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
               >
                 <span className="sr-only">Siguiente</span>
