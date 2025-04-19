@@ -27,7 +27,7 @@ export default function Header() {
 
           {/* Espacio central con título */}
           <div className="flex-1 flex justify-center">
-            <h1 className="text-2xl sm:text-3xl font-bold dark:text-white">Buscador de Fondos de Inversión</h1>
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-bold dark:text-white text-center px-2">Buscador de Fondos de Inversión</h1>
           </div>
 
           {/* Acciones (ThemeToggle y Administrar datos) */}

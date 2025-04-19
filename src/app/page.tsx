@@ -220,21 +220,21 @@ export default function Home() {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen flex flex-col dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col dark:bg-gray-900 py-2 overflow-hidden">
       <Header />
       
-      <main className="flex-grow">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+      <main className="flex-grow w-full overflow-hidden">
+        <div className="w-full mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-8">
           {/* Pestañas de navegación */}
-          <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-            <nav className="-mb-px flex space-x-4 sm:space-x-8" aria-label="Tabs">
+          <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
+            <nav className="-mb-px flex space-x-4 sm:space-x-6" aria-label="Tabs">
               <button
                 onClick={() => handleTabChange('fondos-gestion-activa')}
                 className={`${
                   activeTab === 'fondos-gestion-activa'
                     ? 'border-red-500 text-red-600 dark:text-red-400'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm sm:text-base`}
+                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm sm:text-base`}
               >
                 Fondos gestión activa
               </button>
@@ -244,7 +244,7 @@ export default function Home() {
                   activeTab === 'fondos-indexados'
                     ? 'border-red-500 text-red-600 dark:text-red-400'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm sm:text-base`}
+                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm sm:text-base`}
               >
                 Fondos indexados
               </button>
@@ -254,7 +254,7 @@ export default function Home() {
                   activeTab === 'etf-y-etc'
                     ? 'border-red-500 text-red-600 dark:text-red-400'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm sm:text-base`}
+                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm sm:text-base`}
               >
                 ETF y ETC
               </button>
@@ -262,7 +262,7 @@ export default function Home() {
           </div>
 
           {/* Enlace para descargar CSV */}
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end mb-3">
             <a 
               href={`/api/funds?dataSource=${activeTab}&download=true`}
               className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 flex items-center gap-1 text-sm"
@@ -278,16 +278,16 @@ export default function Home() {
           {/* Botón para mostrar/ocultar filtros en móvil */}
           <button
             onClick={toggleFilterPanel}
-            className="md:hidden flex items-center gap-2 mb-4 bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-md"
+            className="md:hidden flex items-center gap-2 mb-3 bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-md"
           >
             <Filter size={20} />
             <span className="dark:text-white">{isFilterPanelOpen ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
           </button>
 
-          <div className="flex flex-col md:flex-row gap-8">
+          <div className="flex flex-col md:flex-row gap-4">
             {/* Panel lateral de filtros */}
             <div className={`
-              ${isFilterPanelCollapsed ? 'md:w-12' : 'md:w-72'}
+              ${isFilterPanelCollapsed ? 'md:w-10' : 'md:w-64'}
               md:flex-shrink-0
               fixed md:static inset-0 z-30 bg-white dark:bg-gray-900 md:bg-transparent
               transition-all duration-300 ease-in-out
@@ -296,16 +296,16 @@ export default function Home() {
               {/* Botón para contraer/expandir en desktop */}
               <button
                 onClick={toggleFilterPanelCollapse}
-                className="hidden md:flex absolute -right-4 top-12 items-center justify-center h-8 w-8 rounded-full bg-white dark:bg-gray-800 shadow-md z-10 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 focus:outline-none"
+                className="hidden md:flex absolute -right-3 top-12 items-center justify-center h-6 w-6 rounded-full bg-white dark:bg-gray-800 shadow-md z-10 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 focus:outline-none"
               >
                 {isFilterPanelCollapsed ? (
-                  <ChevronRight size={16} />
+                  <ChevronRight size={14} />
                 ) : (
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={14} />
                 )}
               </button>
 
-              <div className={`bg-white dark:bg-gray-800 h-full md:h-auto overflow-y-auto md:rounded-lg md:shadow p-6 ${isFilterPanelCollapsed ? 'overflow-hidden' : ''}`}>
+              <div className={`bg-white dark:bg-gray-800 h-full md:h-auto overflow-y-auto md:rounded-lg md:shadow p-4 ${isFilterPanelCollapsed ? 'overflow-hidden' : ''}`}>
                 <div className="flex justify-between items-center mb-6 md:hidden">
                   <h2 className="text-xl font-semibold dark:text-white">Filtros</h2>
                   <button onClick={toggleFilterPanel} className="p-2 dark:text-gray-300">
@@ -985,22 +985,24 @@ export default function Home() {
               />
             )}
 
-            {/* Contenido principal */}
-            <div className="flex-1">
-              <FundTable 
-                isinSearch={isinSearch}
-                selectedCategories={selectedCategories}
-                selectedCurrency={selectedCurrency}
-                selectedRiskLevels={selectedRiskLevels}
-                dataSource={activeTab}
-                visibleColumns={visibleColumns}
-                focusListFilter={focusListFilter}
-                implicitAdvisoryFilter={implicitAdvisoryFilter}
-                explicitAdvisoryFilter={explicitAdvisoryFilter}
-                hedgeFilter={hedgeFilter}
-                dividendPolicyFilter={dividendPolicyFilter}
-                replicationTypeFilter={replicationTypeFilter}
-              />
+            {/* Contenido principal - tabla de fondos */}
+            <div className="flex-1 w-full overflow-hidden">
+              <div className="w-full overflow-auto">
+                <FundTable 
+                  isinSearch={isinSearch}
+                  selectedCategories={selectedCategories}
+                  selectedCurrency={selectedCurrency}
+                  selectedRiskLevels={selectedRiskLevels}
+                  dataSource={activeTab}
+                  visibleColumns={visibleColumns}
+                  focusListFilter={focusListFilter}
+                  implicitAdvisoryFilter={implicitAdvisoryFilter}
+                  explicitAdvisoryFilter={explicitAdvisoryFilter}
+                  hedgeFilter={hedgeFilter}
+                  dividendPolicyFilter={dividendPolicyFilter}
+                  replicationTypeFilter={replicationTypeFilter}
+                />
+              </div>
             </div>
           </div>
         </div>
