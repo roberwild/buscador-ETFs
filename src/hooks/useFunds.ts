@@ -16,6 +16,7 @@ interface UseFundsParams {
   hedgeFilter?: string;
   dividendPolicyFilter?: string;
   replicationTypeFilter?: string;
+  skipRequest?: boolean;
 }
 
 interface UseFundsResult {
@@ -43,13 +44,19 @@ export function useFunds({
   hedgeFilter = 'Todos',
   dividendPolicyFilter = 'Todos',
   replicationTypeFilter = 'Todos',
+  skipRequest = false,
 }: UseFundsParams = {}): UseFundsResult {
   const [funds, setFunds] = useState<Fund[]>([]);
   const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!skipRequest);
   const [error, setError] = useState<string | null>(null);
 
   const fetchFunds = async () => {
+    if (skipRequest) {
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -93,8 +100,16 @@ export function useFunds({
   };
 
   useEffect(() => {
-    fetchFunds();
-  }, [page, limit, search, category, currency, sortBy, riskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter, dividendPolicyFilter, replicationTypeFilter]);
+    if (skipRequest) {
+      setIsLoading(false);
+    }
+  }, [skipRequest]);
+
+  useEffect(() => {
+    if (!skipRequest) {
+      fetchFunds();
+    }
+  }, [page, limit, search, category, currency, sortBy, riskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter, dividendPolicyFilter, replicationTypeFilter, skipRequest]);
 
   return {
     funds,
