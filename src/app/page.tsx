@@ -8,6 +8,7 @@ import { FundTable, ColumnId, DEFAULT_COLUMNS } from '@/components/FundTable'
 import { RiskLevel, Fund } from '@/types/fund'
 import Link from 'next/link'
 import { useColumnVisibilityStore } from '@/store/columnVisibilityStore'
+import ReportGenerator from '@/components/ReportGenerator'
 
 type TabType = 'fondos-gestion-activa' | 'fondos-indexados' | 'etf-y-etc' | 'seleccionados'
 
@@ -1031,19 +1032,24 @@ export default function Home() {
                 ) : (
                   <div className="w-full">
                     {selectedFunds.length > 0 ? (
-                      <FundTable 
-                        isinSearch=""
-                        selectedCategories={[]}
-                        selectedCurrency={[]}
-                        selectedRiskLevels={[]}
-                        dataSource=""
-                        visibleColumns={visibleColumns}
-                        selectedFunds={selectedFunds}
-                        onSelectFund={handleSelectFund}
-                        isSelectedTab={true}
-                        key="selected-funds-table"
-                        setAnalysisMode={setAnalysisMode}
-                      />
+                      <>
+                        <ReportGenerator selectedFunds={selectedFunds} />
+                        <div className="mt-6">
+                          <FundTable 
+                            isinSearch=""
+                            selectedCategories={[]}
+                            selectedCurrency={[]}
+                            selectedRiskLevels={[]}
+                            dataSource=""
+                            visibleColumns={visibleColumns}
+                            selectedFunds={selectedFunds}
+                            onSelectFund={handleSelectFund}
+                            isSelectedTab={true}
+                            key="selected-funds-table"
+                            setAnalysisMode={setAnalysisMode}
+                          />
+                        </div>
+                      </>
                     ) : (
                       <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
                         <div className="text-gray-500 dark:text-gray-400 mb-4">
