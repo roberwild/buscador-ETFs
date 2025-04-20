@@ -8,6 +8,7 @@ mermaid.initialize({
   theme: 'neutral',
   securityLevel: 'loose',
   fontFamily: 'sans-serif',
+  logLevel: 4, // 'error' level only to reduce console noise
 });
 
 interface FundChartsProps {
@@ -24,6 +25,47 @@ const getRiskLevelNumber = (riskLevel: string): number => {
     case 'Riesgo alto': return 4;
     case 'Riesgo muy alto': return 5;
     default: return 0;
+  }
+};
+
+// Helper function to safely render Mermaid charts with error boundary
+const renderMermaidChart = async (
+  chartId: string, 
+  definition: string, 
+  container: HTMLDivElement | null, 
+  fallbackMessage: string = 'Gráfico no disponible'
+): Promise<void> => {
+  if (!container) return;
+  
+  try {
+    // Ensure clean container
+    container.innerHTML = '';
+    
+    // Add timeout to prevent hanging
+    const renderPromise = new Promise<{svg: string}>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Timeout rendering chart'));
+      }, 3000);
+      
+      mermaid.render(chartId, definition)
+        .then(result => {
+          clearTimeout(timeoutId);
+          resolve(result);
+        })
+        .catch(err => {
+          clearTimeout(timeoutId);
+          reject(err);
+        });
+    });
+    
+    const { svg } = await renderPromise;
+    container.innerHTML = svg;
+  } catch (err) {
+    console.error(`Error rendering ${chartId}:`, err);
+    console.debug('Failed chart definition:', definition);
+    
+    // Quietly hide error in reports - only log to console
+    container.innerHTML = '';
   }
 };
 
@@ -49,8 +91,6 @@ export default function FundCharts({ funds }: FundChartsProps) {
         
         // 1. Gráfico de rentabilidades a 1 año
         if (returnsChartRef.current) {
-          returnsChartRef.current.innerHTML = '';
-          
           // Preprocesar datos para evitar errores
           const fundNames = funds.map(f => f.name.length > 10 ? f.name.slice(0, 10) + '...' : f.name);
           const returnValues = funds.map(f => parseFloat(f.one_year_return.toFixed(2)));
@@ -64,19 +104,11 @@ export default function FundCharts({ funds }: FundChartsProps) {
             bar ${JSON.stringify(returnValues)}
           `;
           
-          try {
-            const { svg } = await mermaid.render('returnsChart', returnsChartDef);
-            returnsChartRef.current.innerHTML = svg;
-          } catch (err) {
-            console.error('Error rendering returns chart:', err);
-            returnsChartRef.current.innerHTML = '<div class="text-red-500 p-4">Error al renderizar gráfico de rentabilidades</div>';
-          }
+          await renderMermaidChart('returnsChart', returnsChartDef, returnsChartRef.current);
         }
         
         // 2. Gráfico de relación riesgo/rentabilidad usando flowchart
         if (riskReturnChartRef.current && funds.length > 0) {
-          riskReturnChartRef.current.innerHTML = '';
-          
           // Preparar datos para el gráfico de dispersión
           const riskReturnData = funds.map(fund => {
             return {
@@ -117,19 +149,11 @@ export default function FundCharts({ funds }: FundChartsProps) {
             style yAxis opacity:0,position:absolute,left:10px,top:250px,writing-mode:vertical-rl,transform:rotate(180deg)
           `;
           
-          try {
-            const { svg } = await mermaid.render('riskReturnChart', scatterDef);
-            riskReturnChartRef.current.innerHTML = svg;
-          } catch (err) {
-            console.error('Error rendering risk-return chart:', err);
-            riskReturnChartRef.current.innerHTML = '<div class="text-red-500 p-4">Error al renderizar gráfico de relación riesgo/rentabilidad</div>';
-          }
+          await renderMermaidChart('riskReturnChart', scatterDef, riskReturnChartRef.current);
         }
         
         // 3. Gráfico de comisiones
         if (feesChartRef.current) {
-          feesChartRef.current.innerHTML = '';
-          
           // Crear versión segura con valores correctos para el gráfico circular
           const fundLabels = funds.map(fund => fund.name.length > 10 ? fund.name.slice(0, 10) + '...' : fund.name);
           const feeValues = funds.map(fund => fund.management_fee.toFixed(2));
@@ -152,13 +176,7 @@ export default function FundCharts({ funds }: FundChartsProps) {
             `;
           }
           
-          try {
-            const { svg } = await mermaid.render('feesChart', pieChartDef);
-            feesChartRef.current.innerHTML = svg;
-          } catch (err) {
-            console.error('Error rendering fees chart:', err);
-            feesChartRef.current.innerHTML = '<div class="text-red-500 p-4">Error al renderizar gráfico de comisiones</div>';
-          }
+          await renderMermaidChart('feesChart', pieChartDef, feesChartRef.current);
         }
         
       } catch (err) {

@@ -26,6 +26,7 @@ const MermaidDiagram = ({ content }: { content: string }) => {
   const [svg, setSvg] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [fixedContent, setFixedContent] = useState<string | null>(null);
+  const [isErrorHidden, setIsErrorHidden] = useState<boolean>(false);
   const uniqueId = useRef(`mermaid-${Math.random().toString(36).substr(2, 9)}`);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -98,18 +99,68 @@ const MermaidDiagram = ({ content }: { content: string }) => {
       }
     }
     
+    // Fix for errors with ALPHA token issues
+    if (errorMsg.includes("Expecting") && errorMsg.includes("got 'ALPHA'")) {
+      try {
+        // This could be an issue with mixed string/number data in a chart
+        const lines = code.split('\n');
+        let fixedCode = '';
+        
+        for (const line of lines) {
+          // Check for any line with array notation that might have mixed data types
+          if (line.includes('[') && line.includes(']')) {
+            // Extract array content
+            const match = line.match(/\[(.*?)\]/);
+            if (match && match[1]) {
+              const content = match[1].trim();
+              
+              // If it has commas, try to clean it
+              if (content.includes(',')) {
+                // Try to convert all values to numbers
+                const values = content.split(',').map(s => {
+                  s = s.trim();
+                  // If it looks like a number, keep it as is
+                  const num = parseFloat(s);
+                  if (!isNaN(num) && num.toString() === s) {
+                    return s;
+                  }
+                  // Otherwise return a placeholder number
+                  return '0';
+                });
+                
+                // Replace the original array with the fixed one
+                const fixedLine = line.replace(/\[.*?\]/, `[${values.join(', ')}]`);
+                fixedCode += fixedLine + '\n';
+                continue;
+              }
+            }
+          }
+          
+          // Keep other lines unchanged
+          fixedCode += line + '\n';
+        }
+        
+        return fixedCode;
+      } catch (e) {
+        console.error('Error fixing ALPHA token issue:', e);
+        return null;
+      }
+    }
+    
     return null; // No se pudo corregir
   };
 
   useEffect(() => {
     // Asegurarse de que mermaid esté definido
     if (typeof mermaid === 'undefined') {
-      setError('Biblioteca Mermaid no disponible');
+      console.error('Biblioteca Mermaid no disponible');
+      setIsErrorHidden(true);
       return;
     }
 
     let isMounted = true;
     setFixedContent(null);
+    setIsErrorHidden(false);
 
     const renderDiagram = async () => {
       if (!isMounted) return;
@@ -169,8 +220,12 @@ const MermaidDiagram = ({ content }: { content: string }) => {
               }
             } catch (fixError) {
               console.error('Error rendering fixed diagram:', fixError);
-              // Mantener el error original si la corrección también falla
+              // Si no podemos renderizar incluso después de corregir, ocultamos el error en los informes
+              setIsErrorHidden(true);
             }
+          } else {
+            // Si no podemos corregir el diagrama, ocultamos el error en los informes
+            setIsErrorHidden(true);
           }
         }
       }
@@ -183,7 +238,16 @@ const MermaidDiagram = ({ content }: { content: string }) => {
     };
   }, [content]);
 
+  // Si hay un error y estamos en modo ocultar errores (para informes finales)
+  // simplemente no mostramos nada, como si el gráfico no existiera
+  if (isErrorHidden) {
+    // Sólo para depuración, no mostramos nada al usuario
+    console.warn('Omitiendo diagrama con error de Mermaid en el informe');
+    return null;
+  }
+
   if (error) {
+    // Esta sección sólo aparecerá durante el desarrollo o depuración
     return (
       <div className="my-4 p-3 border border-red-300 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
         <p className="font-medium">Error al renderizar el diagrama:</p>
@@ -203,6 +267,14 @@ const MermaidDiagram = ({ content }: { content: string }) => {
             </pre>
           </div>
         )}
+        <div className="mt-4">
+          <button 
+            onClick={() => setIsErrorHidden(true)} 
+            className="text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-blue-200 px-3 py-1 rounded"
+          >
+            Ocultar este error en el informe
+          </button>
+        </div>
       </div>
     );
   }
