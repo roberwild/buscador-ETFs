@@ -235,9 +235,10 @@ interface PdfPreviewModalProps {
   onClose: () => void;
   pdfUrl: string;
   fundName: string;
+  documentType?: 'factsheet' | 'kiid';
 }
 
-function PdfPreviewModal({ isOpen, onClose, pdfUrl, fundName }: PdfPreviewModalProps) {
+function PdfPreviewModal({ isOpen, onClose, pdfUrl, fundName, documentType = 'factsheet' }: PdfPreviewModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -256,6 +257,8 @@ function PdfPreviewModal({ isOpen, onClose, pdfUrl, fundName }: PdfPreviewModalP
 
   if (!isOpen) return null;
 
+  const documentTitle = documentType === 'kiid' ? 'KIID PRIIPS' : 'Ficha Comercial';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div 
@@ -264,7 +267,9 @@ function PdfPreviewModal({ isOpen, onClose, pdfUrl, fundName }: PdfPreviewModalP
       />
       <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-[90%] h-[95vh] mx-auto p-3 flex flex-col">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">{fundName}</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            {documentTitle} - {fundName}
+          </h3>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
@@ -328,6 +333,7 @@ export function FundTable({
   const [showNoKiidModal, setShowNoKiidModal] = useState(false);
   const [showPdfPreviewModal, setShowPdfPreviewModal] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState('');
+  const [currentDocumentType, setCurrentDocumentType] = useState<'factsheet' | 'kiid'>('factsheet');
   const [selectedFund, setSelectedFund] = useState<{name: string, isin: string} | null>(null);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'ytd_return', desc: true }]);
   const [currentPage, setCurrentPage] = useState(0);
@@ -547,6 +553,7 @@ export function FundTable({
       // Si tiene URL de ficha comercial, mostrar en modal
       setSelectedFund({ name: fund.name, isin: fund.isin });
       setPdfPreviewUrl(fund.factsheet_url);
+      setCurrentDocumentType('factsheet');
       setShowPdfPreviewModal(true);
     } else {
       // Si no tiene URL, mostrar el modal de aviso
@@ -559,17 +566,13 @@ export function FundTable({
     e.stopPropagation();
     
     if (fund.kiid_url && fund.kiid_url.trim() !== '') {
-      // Si tiene URL de KIID, abrir en nueva pestaña
-      try {
-        window.open(fund.kiid_url, '_blank', 'noopener,noreferrer');
-      } catch (error) {
-        console.error('Error opening KIID URL:', error);
-        // Si hay error al abrir, mostrar el modal
-        setSelectedFund({ name: fund.name, isin: fund.isin });
-        setShowNoKiidModal(true);
-      }
+      // Si tiene URL de KIID, mostrar en modal de previsualización
+      setSelectedFund({ name: fund.name, isin: fund.isin });
+      setPdfPreviewUrl(fund.kiid_url);
+      setCurrentDocumentType('kiid');
+      setShowPdfPreviewModal(true);
     } else {
-      // Si no tiene URL, mostrar el modal
+      // Si no tiene URL, mostrar el modal de aviso
       setSelectedFund({ name: fund.name, isin: fund.isin });
       setShowNoKiidModal(true);
     }
@@ -591,14 +594,14 @@ export function FundTable({
       fund.category, 
       fund.management_company,
       fund.risk_level,
-      fund.dividend_policy === 'C' ? 'acumulación' : 
-        fund.dividend_policy === 'D' ? 'distribución' : fund.dividend_policy,
+      fund.dividend_policy,
       fund.replication_type || '',
       fund.rating || '',
       fund.maturity_range || '',
       fund.compartment_code || '',
       fund.focus_list === 'Y' ? 'focus list' : '',
-      fund.hedge === 'Y' ? 'hedge' : '',
+      fund.hedge ? 'hedge' : '',
+      fund.req || '',
     ].filter(Boolean).join(' ').toLowerCase();
     
     return searchableText.includes(searchLower);
@@ -771,7 +774,7 @@ export function FundTable({
           header: 'Hedge',
           size: 100,
           ...standardColumnProps,
-          cell: info => <div className="text-center">{info.getValue() === 'Y' ? 'Sí' : 'No'}</div>
+          cell: info => <div className="text-center">{info.getValue() ? 'Sí' : 'No'}</div>
         })
       );
     }
@@ -830,10 +833,8 @@ export function FundTable({
           ...standardColumnProps,
           cell: info => {
             const value = info.getValue();
-            const isAccumulation = value === 'C';
-            const isDistribution = value === 'D';
             
-            if (isAccumulation) {
+            if (value === 'Acumulación') {
               return (
                 <div className="text-center">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -841,7 +842,7 @@ export function FundTable({
                   </span>
                 </div>
               );
-            } else if (isDistribution) {
+            } else if (value === 'Distribución') {
               return (
                 <div className="text-center">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
@@ -851,7 +852,7 @@ export function FundTable({
               );
             }
             
-            return <div className="text-center">{value}</div>;
+            return <div className="text-center">{value || '-'}</div>;
           }
         })
       );
@@ -1537,7 +1538,7 @@ export function FundTable({
         <div className="flex items-center gap-2 ml-auto">
           <h2 className="text-base font-medium text-gray-900 dark:text-white hidden sm:block">
             {isSelectedTab 
-              ? `${selectedFunds.length} fondos seleccionados` 
+              ? `${selectedFunds.length} fondos para comparar` 
               : `${total.toLocaleString()} ${tableTitle}`}
           </h2>
         </div>
@@ -1576,7 +1577,7 @@ export function FundTable({
       <div className="sm:hidden mb-4 overflow-hidden">
         <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white truncate">
           {isSelectedTab 
-            ? `${selectedFunds.length} fondos seleccionados` 
+            ? `${selectedFunds.length} fondos para comparar` 
             : `${total.toLocaleString()} ${tableTitle}`}
         </h2>
       </div>
@@ -1692,7 +1693,7 @@ export function FundTable({
                   <tr>
                     <td colSpan={table.getAllColumns().length} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                       {isSelectedTab 
-                        ? 'No hay fondos seleccionados' 
+                        ? 'No hay fondos para comparar' 
                         : (globalFilter ? 'No se encontraron resultados para esta búsqueda' : 'No se encontraron fondos que coincidan con los criterios de búsqueda')}
                     </td>
                   </tr>
@@ -1829,6 +1830,7 @@ export function FundTable({
             onClose={() => setShowPdfPreviewModal(false)}
             pdfUrl={pdfPreviewUrl}
             fundName={selectedFund.name}
+            documentType={currentDocumentType}
           />
         </>
       )}

@@ -343,7 +343,7 @@ export default function Home() {
     fetchFundsAndCountFilters(activeTab);
   }, [activeTab, fetchFundsAndCountFilters]);
 
-  // Manejar cambio de pestaña - resetear filtros solo si no es la pestaña seleccionados
+  // Manejar cambio de pestaña - resetear filtros solo si no es la pestaña comparador de fondos
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab)
     
@@ -518,7 +518,7 @@ export default function Home() {
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm sm:text-base ml-auto`}
               >
-                Seleccionados {selectedFunds.length > 0 && `(${selectedFunds.length})`}
+                Comparador de fondos {selectedFunds.length > 0 && `(${selectedFunds.length})`}
               </button>
             </nav>
           </div>
@@ -547,7 +547,7 @@ export default function Home() {
                 }`}
               >
                 <Download size={18} />
-                Exportar seleccionados ({selectedFunds.length})
+                Exportar comparador ({selectedFunds.length})
               </button>
             )}
           </div>
@@ -1404,7 +1404,7 @@ export default function Home() {
                         {/* 1. Tabla de fondos seleccionados */}
                         <div className="mb-6">
                           <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
-                            Fondos Seleccionados
+                            Comparador de fondos
                           </h2>
                           <FundTable 
                             isinSearch=""
@@ -1490,7 +1490,7 @@ export default function Home() {
                     ) : (
                       <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
                         <div className="text-gray-500 dark:text-gray-400 mb-4">
-                          No hay fondos seleccionados
+                          No hay fondos para comparar
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                           Selecciona fondos desde las otras pestañas utilizando el botón <Plus size={16} className="inline" /> 

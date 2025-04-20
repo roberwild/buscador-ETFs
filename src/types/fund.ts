@@ -13,9 +13,11 @@ export type Fund = {
   management_company: string;
   currency: string;
   risk_level: RiskLevel;
-  focus_list: string;
+  focus_list: 'Y' | 'N' | string;
   implicit_advisory?: boolean;
   explicit_advisory?: boolean;
+  available_for_implicit_advisory?: boolean;
+  available_for_explicit_advisory?: boolean;
   hedge?: boolean;
   dividend_policy?: 'Acumulación' | 'Distribución';
   replication_type?: 'Física' | 'Sintética';
@@ -27,5 +29,7 @@ export type Fund = {
   rating?: string;
   maturity_range?: string;
   factsheet_url: string;
+  kiid_url?: string;
   compartment_code: string;
+  req?: string;
 }; 

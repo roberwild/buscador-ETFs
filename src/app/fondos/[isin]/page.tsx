@@ -62,12 +62,12 @@ export default function FundDetail({ params }: { params: { isin: string } }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-medium mb-2">Rating Morningstar</h3>
-          <p>{fund.morningstar_rating ? '★'.repeat(fund.morningstar_rating) : 'No tiene'}</p>
+          <p>{fund.rating ? '★'.repeat(Number(fund.rating)) : 'No tiene'}</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-medium mb-2">Sharpe ratio</h3>
-          <p>{fund.sharpe_ratio || 'N/A'}</p>
+          <p>No disponible</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow">
