@@ -6,7 +6,7 @@ interface UseFundsParams {
   limit?: number;
   search?: string;
   category?: string;
-  currency?: string;
+  currency?: string | string[];
   sortBy?: string;
   riskLevels?: string;
   dataSource?: string;
@@ -71,7 +71,9 @@ export function useFunds({
         limit: limit.toString(),
         ...(search && { search }),
         ...(category && { category }),
-        ...(currency && { currency }),
+        ...(currency && (Array.isArray(currency) ? currency.length > 0 : true) && { 
+          currency: Array.isArray(currency) ? currency.join(',') : currency 
+        }),
         ...(sortBy && { sortBy }),
         ...(riskLevels && { riskLevels }),
         dataSource,
@@ -90,10 +92,21 @@ export function useFunds({
       }
 
       const data = await response.json();
-      setFunds(data.funds);
-      setTotal(data.total);
+      
+      // Ensure we have valid data before updating state
+      if (data && data.funds) {
+        setFunds(data.funds);
+        setTotal(data.total || 0);
+      } else {
+        console.error('Invalid data format received from API:', data);
+        setFunds([]);
+        setTotal(0);
+      }
     } catch (err) {
+      console.error('Error in useFunds hook:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
+      setFunds([]);
+      setTotal(0);
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +125,7 @@ export function useFunds({
   }, [page, limit, search, category, currency, sortBy, riskLevels, dataSource, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter, dividendPolicyFilter, replicationTypeFilter, skipRequest]);
 
   return {
-    funds,
+    funds: funds || [], // Ensure funds is always an array
     total,
     page,
     totalPages: Math.ceil(total / limit),

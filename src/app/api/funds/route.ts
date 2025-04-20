@@ -26,9 +26,15 @@ function parseNumericValue(value: string | undefined): number {
   return parseFloat(cleanValue) || 0;
 }
 
-// Función para normalizar los valores de focus_list
+// Change "Y"/"N" string to boolean conversion
+function stringToBoolean(value: string | undefined): boolean {
+  if (!value) return false;
+  return value.trim().toUpperCase() === 'Y';
+}
+
+// Updated function to return boolean instead of string
 function normalizeFocusList(value: string | undefined): string {
-  if (!value) return 'N';
+  if (!value) return 'No';
   
   try {
     // Eliminar caracteres no imprimibles y espacios
@@ -39,14 +45,10 @@ function normalizeFocusList(value: string | undefined): string {
                         .trim()
                         .toUpperCase();
     
-    // Convertir a Y/N para estandarizar
-    if (['Y', 'S', 'SI', 'SÍ', 'YES', 'TRUE', '1'].includes(normalized)) {
-      return 'Y';
-    } else {
-      return 'N';
-    }
+    // Convertir a 'Sí'/'No' string
+    return ['Y', 'S', 'SI', 'SÍ', 'YES', 'TRUE', '1'].includes(normalized) ? 'Sí' : 'No';
   } catch (error) {
-    return 'N'; // En caso de error, asumimos 'N'
+    return 'No'; // En caso de error, asumimos 'No'
   }
 }
 
@@ -134,38 +136,37 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         }
       }
       
-      // En ETFs, el valor "Focus list" es exactamente como aparece en el CSV (con l minúscula)
-      let focusList = 'N'; // Valor por defecto
-      
-      // Verificamos directamente si existe la columna "Focus list" (nombre exacto del CSV)
-      if (row['Focus list'] !== undefined) {
-        focusList = normalizeFocusList(row['Focus list']);
-      } 
-      // Si no, intentamos otras variantes
-      else {
-        // Posibles nombres para la columna Focus List
-        const possibleFocusListColumns = [
-          'Focus List', 'FocusList', 'FOCUS LIST', 
-          'Focus_list', 'focus_list', 'focus-list'
-        ];
-        
-        // Buscar en todas las columnas posibles
-        for (const colName of possibleFocusListColumns) {
-          if (row[colName] !== undefined) {
-            focusList = normalizeFocusList(row[colName]);
-            break;
+      // Encontrar la columna que corresponde a Focus List
+      let focusList = '';
+      if (dataSource === 'etf-y-etc') {
+        // Verificamos directamente si existe la columna "Focus list" (nombre exacto del CSV)
+        if (row['Focus list'] !== undefined) {
+          focusList = row['Focus list'];
+        } 
+        // Si no, intentamos otras variantes
+        else {
+          // Intentamos con variantes de nombres de columna
+          const possibleFocusListColumns = [
+            'Focus List', 'FocusList', 'Foco', 'Recomendado', 'Recommended', 
+            'Focus_List', 'Recommendation', 'FList'
+          ];
+          
+          for (const colName of possibleFocusListColumns) {
+            if (row[colName] !== undefined) {
+              focusList = row[colName];
+              break;
+            }
           }
-        }
-        
-        // Si todavía no encontramos, buscar columnas que puedan contener Y/N
-        if (focusList === 'N') {
-          for (const key of Object.keys(row)) {
-            const value = row[key];
-            if (typeof value === 'string' && ['Y', 'N'].includes(value.trim().toUpperCase())) {
-              // Si es la primera columna, asumimos que es Focus List
-              if (Object.keys(row).indexOf(key) === 0) {
-                focusList = normalizeFocusList(value);
-                break;
+          
+          // Si sigue siendo null, intentamos buscar la primera columna que tenga solo valores Y/N/S/N
+          if (!focusList) {
+            for (const [key, value] of Object.entries(row)) {
+              if (typeof value === 'string' && ['Y', 'N', 'S', 'SI', 'NO', 'YES'].includes(value.toUpperCase())) {
+                // Si es la primera columna, asumimos que es Focus List
+                if (Object.keys(row).indexOf(key) === 0) {
+                  focusList = value;
+                  break;
+                }
               }
             }
           }
@@ -181,7 +182,7 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         compartment_code: '',
         available_for_implicit_advisory: false,
         available_for_explicit_advisory: false,
-        hedge: row['Hedge'] || 'N',
+        hedge: stringToBoolean(row['Hedge']),
         management_fee: parseNumericValue(row['Comisión Gestión'] || row['TER'] || row['Gastos corrientes (%)']),
         success_fee: parseNumericValue(row['Comisión Exito'] || '0'),
         min_investment: parseNumericValue(row['Mínimo Inicial'] || '0'),
@@ -196,12 +197,14 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         kiid_url: kiidUrl,
         risk_level: mapRiskLevel(row['REQ'] || row['Riesgo'] || ''),
         morningstar_rating: parseInt(row['Morningstar Rating'] || '0'),
-        focus_list: focusList,
+        focus_list: normalizeFocusList(focusList),
         rating: row['Calificación'] || '',
         maturity_range: row['Rango de vencimientos'] || '',
         dividend_policy: row['Política de dividendos'] || '',
         replication_type: row['Tipo de Réplica'] || '',
         req: row['REQ'] || '',
+        implicit_advisory: false,
+        explicit_advisory: false,
       };
     });
   } else if (dataSource === 'fondos-indexados') {
@@ -222,9 +225,9 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         category: row['Categoria SB'] || '',
         subcategory: row['Categoría Morningstar'] || '',
         compartment_code: row['Código de compartimento'] || '',
-        available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
-        available_for_explicit_advisory: row['Disponible para asesoramiento con cobro explícito'] === 'Y',
-        hedge: row['Hedge'] || 'N', // Valor por defecto: N
+        available_for_implicit_advisory: stringToBoolean(row['Disponible para asesoramiento con cobro implícito']),
+        available_for_explicit_advisory: stringToBoolean(row['Disponible para asesoramiento con cobro explícito']),
+        hedge: stringToBoolean(row['Hedge']), // Valor por defecto: false
         management_fee: parseNumericValue(row['Comisión Gestión']),
         success_fee: parseNumericValue(row['Comisión Exito']),
         min_investment: parseNumericValue(row['Mínimo Inicial']),
@@ -244,6 +247,8 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         maturity_range: row['Rango de vencimientos'] || '',
         dividend_policy: row['Politica de dividendos'] || '',
         req: row['REQ'] || '',
+        implicit_advisory: stringToBoolean(row['Disponible para asesoramiento con cobro implícito']),
+        explicit_advisory: stringToBoolean(row['Disponible para asesoramiento con cobro explícito']),
       };
     });
   } else {
@@ -265,9 +270,9 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         category: row['Categoria Singular Bank'] || '',
         subcategory: row['Subcategoria'] || row['Categoría Morningstar'] || '',
         compartment_code: row['Código de compartimento'] || '',
-        available_for_implicit_advisory: row['Disponible para asesoramiento con cobro implícito'] === 'Y',
-        available_for_explicit_advisory: row['Disponible para asesoramiento con cobro explícito'] === 'Y',
-        hedge: row['Hedge'] || 'N', // Valor por defecto: N
+        available_for_implicit_advisory: stringToBoolean(row['Disponible para asesoramiento con cobro implícito']),
+        available_for_explicit_advisory: stringToBoolean(row['Disponible para asesoramiento con cobro explícito']),
+        hedge: stringToBoolean(row['Hedge']), // Valor por defecto: false
         management_fee: parseNumericValue(row['Comisión Gestión']),
         success_fee: parseNumericValue(row['Comisión Exito']),
         min_investment: parseNumericValue(row['Mínimo Inicial']),
@@ -287,6 +292,8 @@ async function getFundsData(dataSource: string = 'fondos-gestion-activa'): Promi
         maturity_range: row['Rango de vencimientos'] || '',
         dividend_policy: row['Politica de dividendos'] || '',
         req: row['REQ'] || '',
+        implicit_advisory: stringToBoolean(row['Disponible para asesoramiento con cobro implícito']),
+        explicit_advisory: stringToBoolean(row['Disponible para asesoramiento con cobro explícito']),
       };
     });
   }
@@ -388,9 +395,12 @@ export async function GET(request: Request) {
 
     // Aplicar filtro de divisa
     if (currency) {
-      allFunds = allFunds.filter(fund => 
-        fund.currency.toLowerCase() === currency.toLowerCase()
-      );
+      const currencies = currency.split(',').filter(Boolean);
+      if (currencies.length > 0) {
+        allFunds = allFunds.filter(fund => 
+          currencies.some(c => fund.currency.toLowerCase() === c.toLowerCase())
+        );
+      }
     }
 
     // Aplicar filtro de nivel de riesgo
@@ -407,7 +417,7 @@ export async function GET(request: Request) {
     if (focusListFilter !== 'Todos') {
       const isInFocusList = focusListFilter === 'Sí';
       allFunds = allFunds.filter(fund => 
-        (fund.focus_list === 'Y') === isInFocusList
+        fund.focus_list === focusListFilter
       );
     }
     
@@ -415,7 +425,7 @@ export async function GET(request: Request) {
     if (implicitAdvisoryFilter !== 'Todos') {
       const isImplicitAdvisory = implicitAdvisoryFilter === 'Sí';
       allFunds = allFunds.filter(fund => 
-        fund.available_for_implicit_advisory === isImplicitAdvisory
+        fund.implicit_advisory === isImplicitAdvisory
       );
     }
     
@@ -423,7 +433,7 @@ export async function GET(request: Request) {
     if (explicitAdvisoryFilter !== 'Todos') {
       const isExplicitAdvisory = explicitAdvisoryFilter === 'Sí';
       allFunds = allFunds.filter(fund => 
-        fund.available_for_explicit_advisory === isExplicitAdvisory
+        fund.explicit_advisory === isExplicitAdvisory
       );
     }
 
@@ -431,16 +441,16 @@ export async function GET(request: Request) {
     if (hedgeFilter !== 'Todos') {
       const isHedged = hedgeFilter === 'Sí';
       allFunds = allFunds.filter(fund => 
-        (fund.hedge === 'Y') === isHedged
+        fund.hedge === isHedged
       );
     }
 
     // Filtrar por política de dividendos
     if (dividendPolicyFilter !== 'Todos') {
       if (dividendPolicyFilter === 'Acumulación') {
-        allFunds = allFunds.filter(fund => fund.dividend_policy === 'C');
+        allFunds = allFunds.filter(fund => fund.dividend_policy === 'Acumulación');
       } else if (dividendPolicyFilter === 'Distribución') {
-        allFunds = allFunds.filter(fund => fund.dividend_policy === 'D');
+        allFunds = allFunds.filter(fund => fund.dividend_policy === 'Distribución');
       }
     }
 

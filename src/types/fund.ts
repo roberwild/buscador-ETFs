@@ -1,34 +1,31 @@
-export type RiskLevel = 'Sin valorar' | 'Riesgo bajo' | 'Riesgo moderado' | 'Riesgo medio-alto' | 'Riesgo alto' | 'Riesgo muy alto';
+export type RiskLevel = 
+  'Sin valorar' | 
+  'Riesgo bajo' | 
+  'Riesgo moderado' | 
+  'Riesgo medio-alto' | 
+  'Riesgo alto' | 
+  'Riesgo muy alto';
 
-export interface Fund {
+export type Fund = {
   isin: string;
   name: string;
-  currency: string;
   category: string;
-  subcategory: string;
-  compartment_code: string; // Código de compartimento
-  available_for_implicit_advisory: boolean; // Disponible para asesoramiento con cobro implícito
-  available_for_explicit_advisory: boolean; // Disponible para asesoramiento con cobro explícito
-  hedge: string; // Valor Y/N que indica si el fondo tiene cobertura de divisa
-  management_fee: number;
-  success_fee: number;
-  min_investment: number;
-  min_investment_currency: string;
-  aum: string; // Assets Under Management
+  management_company: string;
+  currency: string;
+  risk_level: RiskLevel;
+  focus_list: string;
+  implicit_advisory?: boolean;
+  explicit_advisory?: boolean;
+  hedge?: boolean;
+  dividend_policy?: 'Acumulación' | 'Distribución';
+  replication_type?: 'Física' | 'Sintética';
   ytd_return: number;
   one_year_return: number;
   three_year_return: number;
   five_year_return: number;
-  management_company: string;
+  management_fee: number;
+  rating?: string;
+  maturity_range?: string;
   factsheet_url: string;
-  kiid_url: string;
-  risk_level: RiskLevel;
-  morningstar_rating: number; // 0-5 stars
-  sharpe_ratio?: number; // Opcional ya que no todos los fondos podrían tenerlo
-  focus_list: string; // "Y" o "N"
-  rating?: string; // Calificación crediticia para ETFs de renta fija
-  maturity_range?: string; // Rango de vencimientos para ETFs de renta fija
-  dividend_policy: string; // "C" (Acumulación) o "D" (Distribución)
-  replication_type?: string; // Tipo de réplica: "Física" o "Sintética" para ETFs
-  req?: string; // Valor de riesgo REQ
-} 
+  compartment_code: string;
+}; 

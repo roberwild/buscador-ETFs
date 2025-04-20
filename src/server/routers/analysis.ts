@@ -3,11 +3,30 @@ import { router, publicProcedure } from '../trpc';
 import { ChatOpenAI } from '@langchain/openai';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ChatPromptTemplate, HumanMessagePromptTemplate } from '@langchain/core/prompts';
+import axios from 'axios';
 
 // Define response type for better type safety
 type AnalysisResponse = 
   | { success: true; data: any } 
   | { success: false; error: string };
+
+// Mock function for PDF extraction instead of using pdfjs-dist directly
+// This avoids the DOMMatrix error in Node.js environment
+async function extractTextFromPDF(url: string): Promise<string> {
+  try {
+    if (!url || url.trim() === '') {
+      return '';
+    }
+    
+    console.log(`Server: PDF URL provided, but skipping extraction due to environment compatibility issues`);
+    // Instead of actually parsing the PDF, return a placeholder message
+    // This is a safer approach until we can implement proper PDF extraction in production
+    return `PDF extraction skipped: ${url}`;
+  } catch (error) {
+    console.error(`Server: Error with PDF URL: ${error}`);
+    return '';
+  }
+}
 
 export const analysisRouter = router({
   analyzeFunds: publicProcedure
@@ -28,6 +47,8 @@ export const analysisRouter = router({
             management_company: z.string(),
             focus_list: z.string().optional(),
             dividend_policy: z.string().optional(),
+            factsheet_url: z.string().optional().nullable(),
+            kiid_url: z.string().optional().nullable(),
           })
         ),
       })
@@ -46,8 +67,8 @@ export const analysisRouter = router({
           modelName: "gpt-4o",
           temperature: 0.2,
         });
-
-        // Format funds data
+        
+        // Format basic fund data, skipping PDF extraction for now
         const fundsDataFormatted = input.funds.map(fund => ({
           name: fund.name,
           isin: fund.isin,
@@ -61,7 +82,9 @@ export const analysisRouter = router({
           management_fee: fund.management_fee,
           management_company: fund.management_company,
           focus_list: fund.focus_list,
-          dividend_policy: fund.dividend_policy === 'C' ? 'Acumulación' : 'Distribución'
+          dividend_policy: fund.dividend_policy === 'C' ? 'Acumulación' : 'Distribución',
+          has_factsheet: fund.factsheet_url ? "Sí" : "No",
+          has_kiid: fund.kiid_url ? "Sí" : "No"
         }));
         
         // Format funds data as string

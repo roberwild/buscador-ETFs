@@ -54,7 +54,7 @@ export interface ColumnConfig {
 interface FundTableProps {
   isinSearch: string;
   selectedCategories: string[];
-  selectedCurrency: string;
+  selectedCurrency: string | string[];
   selectedRiskLevels: RiskLevel[];
   dataSource?: string;
   visibleColumns?: ColumnId[];
@@ -68,6 +68,7 @@ interface FundTableProps {
   selectedFunds?: Fund[];
   onSelectFund?: (fund: Fund, isSelected: boolean) => void;
   isSelectedTab?: boolean;
+  setAnalysisMode?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -228,6 +229,82 @@ function NoKiidModal({ isOpen, onClose, fundName, fundIsin }: NoKiidModalProps) 
   );
 }
 
+// Componente para mostrar la previsualización de PDF
+interface PdfPreviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  pdfUrl: string;
+  fundName: string;
+}
+
+function PdfPreviewModal({ isOpen, onClose, pdfUrl, fundName }: PdfPreviewModalProps) {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-[90%] h-[95vh] mx-auto p-3 flex flex-col">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">{fundName}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="flex-1 w-full overflow-hidden">
+          <iframe
+            src={pdfUrl}
+            className="w-full h-full border-0"
+            title={`PDF de ${fundName}`}
+          />
+        </div>
+        
+        <div className="mt-3 flex justify-between">
+          <button
+            type="button"
+            className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-200 text-base font-medium text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:text-sm"
+            onClick={onClose}
+          >
+            Cerrar
+          </button>
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#D1472C] text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
+          >
+            Abrir en nueva pestaña
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function FundTable({ 
   isinSearch, 
   selectedCategories, 
@@ -244,10 +321,13 @@ export function FundTable({
   onColumnVisibilityChange,
   selectedFunds = [],
   onSelectFund,
-  isSelectedTab = false
+  isSelectedTab = false,
+  setAnalysisMode
 }: FundTableProps) {
   const [showNoFactsheetModal, setShowNoFactsheetModal] = useState(false);
   const [showNoKiidModal, setShowNoKiidModal] = useState(false);
+  const [showPdfPreviewModal, setShowPdfPreviewModal] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState('');
   const [selectedFund, setSelectedFund] = useState<{name: string, isin: string} | null>(null);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'ytd_return', desc: true }]);
   const [currentPage, setCurrentPage] = useState(0);
@@ -409,7 +489,7 @@ export function FundTable({
 
   // Save previous data to avoid flicker during loading
   useEffect(() => {
-    if (!isLoading && funds.length > 0) {
+    if (!isLoading && funds && funds.length > 0) {
       setPreviousData(funds);
       setIsInitialLoading(false);
     }
@@ -443,7 +523,7 @@ export function FundTable({
       return previousData;
     }
     
-    return funds.length > 0 ? funds : (isInitialLoading ? [] : previousData);
+    return funds && funds.length > 0 ? funds : (isInitialLoading ? [] : previousData);
   }, [funds, previousData, isChangingSort, isInitialLoading, isSelectedTab, selectedFunds]);
 
   // Get sort by string for API from sorting state
@@ -464,10 +544,12 @@ export function FundTable({
   // Function definitions for handling events
   const handleFundNameClick = (fund: Fund) => {
     if (fund.factsheet_url) {
-      // Si tiene URL de ficha comercial, abrir en nueva pestaña
-      window.open(fund.factsheet_url, '_blank', 'noopener,noreferrer');
+      // Si tiene URL de ficha comercial, mostrar en modal
+      setSelectedFund({ name: fund.name, isin: fund.isin });
+      setPdfPreviewUrl(fund.factsheet_url);
+      setShowPdfPreviewModal(true);
     } else {
-      // Si no tiene URL, mostrar el modal
+      // Si no tiene URL, mostrar el modal de aviso
       setSelectedFund({ name: fund.name, isin: fund.isin });
       setShowNoFactsheetModal(true);
     }
@@ -719,7 +801,7 @@ export function FundTable({
             
             return (
               <div className="text-center">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor}`}>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full ${riskColor}`}>
                   {riskLevel}
                 </span>
               </div>
@@ -1410,6 +1492,13 @@ export function FundTable({
     );
   };
 
+  // Handle analyze button click
+  const handleAnalyze = () => {
+    if (selectedFunds.length > 0) {
+      setAnalysisMode?.(true);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -1722,21 +1811,26 @@ export function FundTable({
 
       {/* Modals */}
       {selectedFund && (
-        <NoFactsheetModal
-          isOpen={showNoFactsheetModal}
-          onClose={() => setShowNoFactsheetModal(false)}
-          fundName={selectedFund.name}
-          fundIsin={selectedFund.isin}
-        />
-      )}
-
-      {selectedFund && (
-        <NoKiidModal
-          isOpen={showNoKiidModal}
-          onClose={() => setShowNoKiidModal(false)}
-          fundName={selectedFund.name}
-          fundIsin={selectedFund.isin}
-        />
+        <>
+          <NoFactsheetModal 
+            isOpen={showNoFactsheetModal} 
+            onClose={() => setShowNoFactsheetModal(false)} 
+            fundName={selectedFund.name} 
+            fundIsin={selectedFund.isin} 
+          />
+          <NoKiidModal 
+            isOpen={showNoKiidModal} 
+            onClose={() => setShowNoKiidModal(false)} 
+            fundName={selectedFund.name} 
+            fundIsin={selectedFund.isin} 
+          />
+          <PdfPreviewModal
+            isOpen={showPdfPreviewModal}
+            onClose={() => setShowPdfPreviewModal(false)}
+            pdfUrl={pdfPreviewUrl}
+            fundName={selectedFund.name}
+          />
+        </>
       )}
     </div>
   );
