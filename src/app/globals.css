@@ -91,4 +91,98 @@ h1, h2, h3, h4, h5, h6 {
 
 .columns-selector .filter-content.expanded::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Styles for highlight.js (rehype-highlight) */
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+}
+
+code.hljs {
+  padding: 3px 5px;
+}
+
+.hljs {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.dark .hljs {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-type,
+.hljs-section,
+.hljs-built_in {
+  color: #7e22ce;
+}
+
+.dark .hljs-keyword,
+.dark .hljs-selector-tag,
+.dark .hljs-literal,
+.dark .hljs-type,
+.dark .hljs-section,
+.dark .hljs-built_in {
+  color: #c084fc;
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-name,
+.hljs-attribute,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-variable {
+  color: #16a34a;
+}
+
+.dark .hljs-string,
+.dark .hljs-title,
+.dark .hljs-name,
+.dark .hljs-attribute,
+.dark .hljs-symbol,
+.dark .hljs-bullet,
+.dark .hljs-addition,
+.dark .hljs-template-tag,
+.dark .hljs-template-variable,
+.dark .hljs-variable {
+  color: #4ade80;
+}
+
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion,
+.hljs-meta {
+  color: #6b7280;
+}
+
+.dark .hljs-comment,
+.dark .hljs-quote,
+.dark .hljs-deletion,
+.dark .hljs-meta {
+  color: #9ca3af;
+}
+
+.hljs-doctag,
+.hljs-strong {
+  font-weight: bold;
+}
+
+.hljs-emphasis {
+  font-style: italic;
 } 

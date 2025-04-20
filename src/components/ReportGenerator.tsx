@@ -1,11 +1,388 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Fund } from '@/types/fund';
 import ReactMarkdown from 'react-markdown';
-import { Download, FileText, Loader2, Info } from 'lucide-react';
+import { Download, FileText, Loader2, Info, Printer } from 'lucide-react';
+import mermaid from 'mermaid';
+import remarkGfm from 'remark-gfm';
+import remarkToc from 'remark-toc';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeSlug from 'rehype-slug';
+
+// Configure mermaid
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'neutral',
+  securityLevel: 'loose',
+  fontFamily: 'sans-serif',
+});
 
 interface ReportGeneratorProps {
   selectedFunds: Fund[];
+  onGenerateReport?: () => void;
 }
+
+// Component to render Mermaid diagrams
+const MermaidDiagram = ({ content }: { content: string }) => {
+  const [svg, setSvg] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  const [fixedContent, setFixedContent] = useState<string | null>(null);
+  const uniqueId = useRef(`mermaid-${Math.random().toString(36).substr(2, 9)}`);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Función para intentar corregir errores comunes en diagramas Mermaid
+  const tryFixMermaidCode = (code: string, errorMsg: string): string | null => {
+    // Si es un error de xychart con STR en lugar de NUMBER
+    if (code.includes('xychart-beta') && errorMsg.includes("Expecting 'NUMBER_WITH_DECIMAL', got 'STR'")) {
+      try {
+        const lines = code.split('\n');
+        let fixedCode = '';
+        let dataValues: number[] = [];
+        let axisLabels: string[] = [];
+
+        // Extraer los valores numéricos del gráfico
+        for (const line of lines) {
+          if (line.trim().startsWith('bar') || line.trim().startsWith('line') || line.trim().startsWith('point')) {
+            const match = line.match(/\[(.*?)\]/);
+            if (match && match[1]) {
+              try {
+                // Intentar extraer strings o números
+                const content = match[1].trim();
+                if (content.includes('"')) {
+                  // Si contiene strings, extraigamos esos valores para usarlos como etiquetas
+                  axisLabels = content.split(',').map(s => s.trim().replace(/"/g, '').replace(/'/g, ''));
+                  // Y eliminamos esta línea errónea de valores
+                  continue;
+                } else {
+                  // Si son números, los conservamos
+                  dataValues = content.split(',').map(n => parseFloat(n.trim()) || 0);
+                }
+              } catch (e) {
+                console.error('Error parsing chart data:', e);
+              }
+            }
+          }
+          
+          // Si es la línea de x-axis y no tenemos etiquetas aún
+          if (line.trim().startsWith('x-axis') && !line.includes('[') && axisLabels.length > 0) {
+            fixedCode += `    x-axis ${JSON.stringify(axisLabels)}\n`;
+            continue;
+          }
+
+          // Mantener las demás líneas
+          fixedCode += line + '\n';
+        }
+
+        // Si encontramos etiquetas y valores, pero no hay línea de data, agregarla
+        if (axisLabels.length > 0 && dataValues.length === 0) {
+          // Generar datos ficticios si es necesario
+          dataValues = axisLabels.map((_, i) => 10 + i * 10);
+          
+          // Insertar después de la línea y-axis
+          const parts = fixedCode.split('y-axis');
+          if (parts.length >= 2) {
+            const [first, ...rest] = parts;
+            fixedCode = first + 'y-axis' + rest[0] + `    bar ${JSON.stringify(dataValues)}\n`;
+            if (rest.length > 1) {
+              fixedCode += rest.slice(1).join('y-axis');
+            }
+          } else {
+            // Si no hay y-axis, agregar al final
+            fixedCode += `    bar ${JSON.stringify(dataValues)}\n`;
+          }
+        }
+
+        return fixedCode;
+      } catch (e) {
+        console.error('Error fixing xychart:', e);
+        return null;
+      }
+    }
+    
+    return null; // No se pudo corregir
+  };
+
+  useEffect(() => {
+    // Asegurarse de que mermaid esté definido
+    if (typeof mermaid === 'undefined') {
+      setError('Biblioteca Mermaid no disponible');
+      return;
+    }
+
+    let isMounted = true;
+    setFixedContent(null);
+
+    const renderDiagram = async () => {
+      if (!isMounted) return;
+
+      try {
+        // Limpiar cualquier diagrama previo
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
+        }
+
+        // Intentar renderizar con un timeout para evitar bloqueos
+        const renderPromise = new Promise<string>((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error('Tiempo de espera agotado al renderizar el diagrama'));
+          }, 3000); // 3 segundos de timeout
+
+          try {
+            mermaid.render(uniqueId.current, content)
+              .then(result => {
+                clearTimeout(timeoutId);
+                resolve(result.svg);
+              })
+              .catch(err => {
+                clearTimeout(timeoutId);
+                reject(err);
+              });
+          } catch (err) {
+            clearTimeout(timeoutId);
+            reject(err);
+          }
+        });
+
+        const svgContent = await renderPromise;
+        
+        if (isMounted) {
+          setSvg(svgContent);
+          setError(null);
+        }
+      } catch (err) {
+        console.error('Error rendering mermaid diagram:', err);
+        
+        if (isMounted) {
+          const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+          setError('Error al renderizar el diagrama: ' + errorMessage);
+          
+          // Intentar corregir el código
+          const fixed = tryFixMermaidCode(content, errorMessage);
+          if (fixed) {
+            setFixedContent(fixed);
+            
+            // Intentar renderizar la versión corregida
+            try {
+              const result = await mermaid.render(uniqueId.current + '_fixed', fixed);
+              if (isMounted) {
+                setSvg(result.svg);
+                setError(null);
+              }
+            } catch (fixError) {
+              console.error('Error rendering fixed diagram:', fixError);
+              // Mantener el error original si la corrección también falla
+            }
+          }
+        }
+      }
+    };
+
+    renderDiagram();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [content]);
+
+  if (error) {
+    return (
+      <div className="my-4 p-3 border border-red-300 rounded-md bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
+        <p className="font-medium">Error al renderizar el diagrama:</p>
+        <p className="text-sm mt-1">{error}</p>
+        <details className="mt-2 text-xs">
+          <summary className="cursor-pointer">Ver código del diagrama</summary>
+          <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-x-auto">
+            {content}
+          </pre>
+        </details>
+        
+        {fixedContent && (
+          <div className="mt-4">
+            <p className="font-medium text-green-600 dark:text-green-400">Sugerencia de corrección:</p>
+            <pre className="mt-2 p-2 text-xs bg-gray-100 dark:bg-gray-800 rounded overflow-x-auto">
+              {fixedContent}
+            </pre>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (!svg) {
+    return (
+      <div className="my-4 p-4 border border-gray-200 dark:border-gray-700 rounded-md flex items-center justify-center">
+        <div className="animate-pulse flex space-x-4 items-center">
+          <div className="h-4 w-4 bg-blue-400 rounded-full"></div>
+          <div className="h-2 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      ref={containerRef}
+      className="my-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-auto max-w-full"
+      dangerouslySetInnerHTML={{ __html: svg }} 
+    />
+  );
+};
+
+// Custom Markdown renderer to handle mermaid code blocks and other elements
+const MarkdownContent = ({ content }: { content: string }) => {
+  // Preprocesar el contenido para añadir una tabla de contenidos si no existe
+  let processedContent = content;
+  if (!content.includes('## Contenido') && !content.includes('## Índice')) {
+    processedContent = `## Contenido\n\n${content}`;
+  }
+
+  return (
+    <div className="markdown-report">
+      <ReactMarkdown
+        remarkPlugins={[
+          remarkGfm, 
+          [remarkToc, { heading: 'contenido|índice', tight: true }]
+        ]}
+        rehypePlugins={[rehypeHighlight, rehypeSlug]}
+        components={{
+          code({ node, className, children, ...props }: any) {
+            const match = /language-(\w+)/.exec(className || '');
+            
+            if (!props.inline && match && match[1] === 'mermaid') {
+              return <MermaidDiagram content={String(children).replace(/\n$/, '')} />;
+            }
+            
+            return (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          h1: ({ children, ...props }) => (
+            <h1 className="text-3xl font-bold my-6 pb-2 border-b-2 border-red-500 text-gray-800 dark:text-white" {...props}>
+              {children}
+            </h1>
+          ),
+          h2: ({ children, ...props }) => (
+            <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-800 dark:text-white" {...props}>
+              {children}
+            </h2>
+          ),
+          h3: ({ children, ...props }) => (
+            <h3 className="text-xl font-medium mt-6 mb-3 text-gray-700 dark:text-gray-200" {...props}>
+              {children}
+            </h3>
+          ),
+          p: ({ children }) => (
+            <p className="my-4 text-gray-700 dark:text-gray-300 leading-relaxed">
+              {children}
+            </p>
+          ),
+          ul: ({ children, ...props }) => (
+            <ul className="my-4 ml-6 list-disc space-y-2 text-gray-700 dark:text-gray-300" {...props}>
+              {children}
+            </ul>
+          ),
+          ol: ({ children, ...props }) => (
+            <ol className="my-4 ml-6 list-decimal space-y-2 text-gray-700 dark:text-gray-300" {...props}>
+              {children}
+            </ol>
+          ),
+          li: ({ children, ...props }) => {
+            // Gestión especial para listas de tareas (checkbox)
+            if (props.className?.includes('task-list-item')) {
+              return (
+                <li className="flex items-start my-1" {...props}>
+                  <span className="mr-2 mt-1">{children}</span>
+                </li>
+              );
+            }
+            
+            return (
+              <li className="pl-2" {...props}>
+                {children}
+              </li>
+            );
+          },
+          input: (props) => {
+            if (props.type === 'checkbox') {
+              return (
+                <input
+                  type="checkbox"
+                  checked={props.checked || false}
+                  readOnly
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              );
+            }
+            return <input {...props} />;
+          },
+          table: ({ children }) => (
+            <div className="my-6 overflow-x-auto rounded-lg shadow">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                {children}
+              </table>
+            </div>
+          ),
+          thead: ({ children }) => (
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              {children}
+            </thead>
+          ),
+          th: ({ children }) => (
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+              {children}
+            </td>
+          ),
+          tr: ({ children }) => (
+            <tr className="even:bg-gray-50 dark:even:bg-gray-700">
+              {children}
+            </tr>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="my-4 border-l-4 border-blue-500 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 pl-4 py-3 text-gray-600 dark:text-gray-400">
+              {children}
+            </blockquote>
+          ),
+          hr: () => (
+            <hr className="my-8 border-gray-200 dark:border-gray-700" />
+          ),
+          a: ({ href, children }) => (
+            <a 
+              href={href} 
+              target={href?.startsWith('http') ? "_blank" : undefined} 
+              rel={href?.startsWith('http') ? "noopener noreferrer" : undefined}
+              className="text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              {children}
+            </a>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-bold text-gray-900 dark:text-white">
+              {children}
+            </strong>
+          ),
+          em: ({ children }) => (
+            <em className="italic text-gray-700 dark:text-gray-300">
+              {children}
+            </em>
+          ),
+          del: ({ children }) => (
+            <del className="line-through text-gray-500 dark:text-gray-500">
+              {children}
+            </del>
+          ),
+        }}
+      >
+        {processedContent}
+      </ReactMarkdown>
+    </div>
+  );
+};
 
 interface DebugInfo {
   extraction_attempts: Array<{
@@ -30,12 +407,13 @@ interface DebugInfo {
   }>;
 }
 
-export default function ReportGenerator({ selectedFunds }: ReportGeneratorProps) {
+export default function ReportGenerator({ selectedFunds, onGenerateReport }: ReportGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [report, setReport] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const generateReport = async () => {
     if (selectedFunds.length === 0) {
@@ -69,6 +447,11 @@ export default function ReportGenerator({ selectedFunds }: ReportGeneratorProps)
       if (data.debug) {
         setDebugInfo(data.debug);
       }
+
+      // Notificar al componente padre que se ha generado un informe
+      if (onGenerateReport) {
+        onGenerateReport();
+      }
     } catch (error) {
       console.error('Error generating report:', error);
       setError(error instanceof Error ? error.message : 'Error desconocido al generar el informe');
@@ -91,6 +474,42 @@ export default function ReportGenerator({ selectedFunds }: ReportGeneratorProps)
     document.body.removeChild(element);
   };
 
+  const printReport = () => {
+    if (!reportRef.current) return;
+    
+    const printContents = reportRef.current.innerHTML;
+    const originalContents = document.body.innerHTML;
+    
+    const printStyles = `
+      <style>
+        body { font-family: Arial, sans-serif; background: white; color: black; }
+        .markdown-report h1 { font-size: 24px; margin-top: 20px; margin-bottom: 10px; border-bottom: 2px solid #ef4444; padding-bottom: 5px; }
+        .markdown-report h2 { font-size: 20px; margin-top: 15px; margin-bottom: 8px; }
+        .markdown-report h3 { font-size: 16px; margin-top: 10px; margin-bottom: 5px; }
+        .markdown-report p { margin: 8px 0; line-height: 1.6; }
+        .markdown-report ul, .markdown-report ol { margin: 8px 0 8px 20px; }
+        .markdown-report table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .markdown-report th, .markdown-report td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .markdown-report th { background-color: #f2f2f2; }
+        .markdown-report tr:nth-child(even) { background-color: #f9f9f9; }
+        .markdown-report blockquote { margin: 10px 0; padding: 10px 20px; background-color: #f8f9ff; border-left: 4px solid #3b82f6; }
+        .markdown-report pre { background-color: #f1f5f9; padding: 12px; border-radius: 4px; overflow-x: auto; }
+        .markdown-report code { font-family: monospace; font-size: 0.9em; }
+        .markdown-report del { text-decoration: line-through; color: #888; }
+        .markdown-report a { color: #2563eb; text-decoration: none; }
+        .task-list-item { display: flex; align-items: flex-start; }
+        .task-list-item input[type="checkbox"] { margin-right: 8px; margin-top: 4px; }
+        @media print {
+          body { padding: 20px; }
+        }
+      </style>
+    `;
+    
+    document.body.innerHTML = `${printStyles}<div class="markdown-report">${printContents}</div>`;
+    window.print();
+    document.body.innerHTML = originalContents;
+  };
+
   const toggleDebugInfo = () => {
     setShowDebugInfo(prev => !prev);
   };
@@ -106,7 +525,7 @@ export default function ReportGenerator({ selectedFunds }: ReportGeneratorProps)
             Genere un informe detallado de los fondos seleccionados utilizando IA
           </p>
         </div>
-        <div className="mt-4 md:mt-0 flex space-x-3">
+        <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
           <button
             onClick={generateReport}
             disabled={isGenerating || selectedFunds.length === 0}
@@ -130,13 +549,23 @@ export default function ReportGenerator({ selectedFunds }: ReportGeneratorProps)
           </button>
 
           {report && (
-            <button
-              onClick={downloadReportAsPDF}
-              className="flex items-center px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
-            >
-              <Download className="w-5 h-5 mr-2" />
-              Descargar Informe
-            </button>
+            <>
+              <button
+                onClick={downloadReportAsPDF}
+                className="flex items-center px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Descargar
+              </button>
+              
+              <button
+                onClick={printReport}
+                className="flex items-center px-4 py-2 rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+              >
+                <Printer className="w-5 h-5 mr-2" />
+                Imprimir
+              </button>
+            </>
           )}
           
           {debugInfo && (
@@ -222,8 +651,8 @@ export default function ReportGenerator({ selectedFunds }: ReportGeneratorProps)
       )}
 
       {report ? (
-        <div className="prose prose-sm md:prose-base lg:prose-lg dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-900 p-6 rounded-md overflow-auto">
-          <ReactMarkdown>{report}</ReactMarkdown>
+        <div ref={reportRef} className="prose prose-sm md:prose-base lg:prose-lg dark:prose-invert max-w-none bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 p-8 rounded-md shadow-inner overflow-auto">
+          <MarkdownContent content={report} />
         </div>
       ) : (
         <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-md">

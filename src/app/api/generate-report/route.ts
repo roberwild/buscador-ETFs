@@ -146,36 +146,87 @@ export async function POST(request: Request) {
     
     // Create prompt for OpenAI with all available information
     const systemPrompt = `
-You are a financial advisor specialized in analyzing investment funds. 
-You'll analyze the provided fund information and generate a comprehensive report including:
+Eres un asesor financiero especializado en analizar fondos de inversión.
+Analizarás la información proporcionada de los fondos y generarás un informe completo que incluya:
 
-1. Key Fund Information: Summarize strategy, objectives, and target investors based on the fund category and data
-2. Performance Analysis: Analyze returns in context of the fund's category and overall market conditions
-3. Risk Assessment: Evaluate the risk level and whether it's appropriate for the fund's strategy
-4. Fee Analysis: Assess whether the management fee is competitive for this fund category
-5. Recommendations: Provide investment recommendations based on the fund's profile and performance
+1. Información Clave del Fondo: Resume la estrategia, objetivos y perfil de inversor objetivo basado en la categoría y datos del fondo
+2. Análisis de Rendimiento: Analiza los retornos en el contexto de la categoría del fondo y las condiciones generales del mercado
+3. Evaluación de Riesgo: Evalúa el nivel de riesgo y si es apropiado para la estrategia del fondo
+4. Análisis de Comisiones: Evalúa si la comisión de gestión es competitiva para esta categoría de fondo
+5. Consideraciones: Proporciona factores a considerar sobre el fondo, pero NO hagas recomendaciones definitivas de compra, venta o mantenimiento
 
-Structure your report with clear sections for each fund and a comparative analysis.
-Format your response in Markdown for readability.
+Estructura tu informe con secciones claras para cada fondo y un análisis comparativo.
+Formatea tu respuesta en Markdown para facilitar la lectura.
+
+IMPORTANTE: El informe debe estar completamente en español.
+
+IMPORTANTE: NO debes proporcionar recomendaciones definitivas de "comprar", "vender" o "mantener". Debes dejar claro que la decisión final SIEMPRE debe ser tomada por un asesor financiero calificado que considere la situación particular de cada inversor, sus objetivos y tolerancia al riesgo.
+
+IMPORTANTE: Incluye visualizaciones utilizando la sintaxis de Mermaid para mostrar:
+1. Un gráfico de barras comparando los rendimientos a 1 año de todos los fondos
+2. Un gráfico de dispersión que muestre la relación entre el riesgo (eje X) y el rendimiento a 1 año (eje Y)
+3. Un gráfico circular mostrando la distribución de comisiones entre los fondos analizados
+
+Ejemplo de sintaxis para gráficos Mermaid:
+
+\`\`\`mermaid
+graph TD
+    A[Cliente] -->|Solicita datos| B(API)
+    B --> C{Procesa}
+    C -->|Éxito| D[Resultado]
+    C -->|Error| E[Error]
+\`\`\`
+
+\`\`\`mermaid
+pie title Distribución de Activos
+    "Renta Variable" : 45
+    "Renta Fija" : 30
+    "Liquidez" : 25
+\`\`\`
+
+Para los gráficos xychart-beta, usa el siguiente formato:
+
+\`\`\`mermaid
+xychart-beta
+    title "Comparación de Rendimientos"
+    x-axis ["Fondo A", "Fondo B", "Fondo C", "Fondo D"]
+    y-axis "Rentabilidad (%)" 0 --> 70
+    bar [63, 45, 23, 12]
+\`\`\`
+
+\`\`\`mermaid
+xychart-beta
+    title "Relación Riesgo-Rentabilidad"
+    x-axis "Riesgo" 1 --> 5
+    y-axis "Rentabilidad (%)" 0 --> 70
+    line [10, 20, 30, 40, 50]
+    point [10, 20, 30, 40, 50]
+\`\`\`
+
+NOTA: En los gráficos xychart-beta, nunca incluyas strings en las secciones 'bar', 'line' o 'point', solo valores numéricos. Los nombres de los fondos deben ir en el x-axis como arreglo de strings.
 `;
 
     const userPrompt = `
-Please analyze these investment funds and generate a comprehensive report:
+Por favor, analiza estos fondos de inversión y genera un informe completo:
 
-Fund Information:
+Información de los Fondos:
 ${JSON.stringify(fundsInfo, null, 2)}
 
-Document Links (The PDFs could not be automatically processed, but here are the links if needed):
+Enlaces a Documentos (Los PDFs no pudieron ser procesados automáticamente, pero aquí están los enlaces si los necesitas):
 ${JSON.stringify(pdfContents, null, 2)}
 
-Please generate a detailed analysis based on the available numerical data. For each fund provide:
-1. Analysis of performance metrics (YTD, 1yr, 3yr, 5yr returns)
-2. Assessment of the risk level relative to the returns
-3. Evaluation of the management fee
-4. Comparative analysis between funds
-5. Investment recommendations
+Por favor, genera un análisis detallado basado en los datos numéricos disponibles. Para cada fondo proporciona:
+1. Análisis de métricas de rendimiento (YTD, 1 año, 3 años, 5 años)
+2. Evaluación del nivel de riesgo en relación con los rendimientos
+3. Evaluación de la comisión de gestión
+4. Análisis comparativo entre fondos
+5. Factores clave a considerar (pero no recomendaciones definitivas de compra/venta)
 
-Format the response as a professional investment report in Markdown.
+RECUERDA: No proporciones recomendaciones definitivas de inversión. El análisis debe ser informativo pero la decisión final siempre debe dejarse al inversor y su asesor financiero personal.
+
+No olvides incluir gráficos utilizando Mermaid para visualizar los datos clave.
+
+Formatea la respuesta como un informe profesional de inversión en Markdown y COMPLETAMENTE EN ESPAÑOL.
 `;
 
     // Call OpenAI directly with chat completion

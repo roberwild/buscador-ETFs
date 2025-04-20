@@ -9,6 +9,7 @@ import { RiskLevel, Fund } from '@/types/fund'
 import Link from 'next/link'
 import { useColumnVisibilityStore } from '@/store/columnVisibilityStore'
 import ReportGenerator from '@/components/ReportGenerator'
+import FundCharts from '@/components/FundCharts'
 
 type TabType = 'fondos-gestion-activa' | 'fondos-indexados' | 'etf-y-etc' | 'seleccionados'
 
@@ -70,6 +71,9 @@ export default function Home() {
   });
   const [allFunds, setAllFunds] = useState<Fund[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Añadir un nuevo estado para controlar la visibilidad de los gráficos
+  const [showCharts, setShowCharts] = useState(false);
   
   // Initialize columns on first render
   useEffect(() => {
@@ -462,6 +466,11 @@ export default function Home() {
     return `${isinSearch}-${selectedCategories.join(',')}-${currencyParam}-${selectedRiskLevels.join(',')}-${activeTab}-${focusListFilter}-${implicitAdvisoryFilter}-${explicitAdvisoryFilter}-${hedgeFilter}-${dividendPolicyFilter}-${replicationTypeFilter}`;
   }, [isinSearch, selectedCategories, selectedCurrency, selectedRiskLevels, activeTab, focusListFilter, implicitAdvisoryFilter, explicitAdvisoryFilter, hedgeFilter, dividendPolicyFilter, replicationTypeFilter]);
 
+  // Modificar la función para generar reportes para que también muestre los gráficos
+  const handleGenerateReport = () => {
+    setShowCharts(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col dark:bg-gray-900 py-2 overflow-hidden">
       <Header />
@@ -627,30 +636,178 @@ export default function Home() {
                             className="flex justify-between items-center cursor-pointer py-1.5"
                             onClick={() => toggleSection('category')}
                           >
-                            <h3 className="font-medium dark:text-white text-sm">Categorías</h3>
+                            <h3 className="font-medium dark:text-white text-sm">Categoría</h3>
                             <button className="text-gray-500 dark:text-gray-400">
                               {expandedSections.category ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </button>
                           </div>
                           <div className={`filter-content ${expandedSections.category ? 'expanded' : ''}`}>
                             <div className="mt-1 pb-1 space-y-1.5">
-                              {Object.entries(filterCounts.categories).map(([category, count]) => (
-                                <div key={category} className="flex items-center justify-between">
+                              {/* Filter by specific categories */}
+                              <div className="flex items-center justify-between">
                                   <div className="flex items-center">
                                     <input
-                                      id={`category-${category}`}
+                                    id="category-renta-fija"
                                       type="checkbox"
                                       className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                                      checked={selectedCategories.includes(category)}
-                                      onChange={() => handleCategoryChange(category)}
+                                    checked={selectedCategories.includes("Renta Fija")}
+                                    onChange={() => handleCategoryChange("Renta Fija")}
                                     />
-                                    <label htmlFor={`category-${category}`} className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-                                      {category}
+                                  <label htmlFor="category-renta-fija" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Renta Fija
                                     </label>
                                   </div>
-                                  {/* Count and percentage hidden but kept for future use */}
                                 </div>
-                              ))}
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-renta-variable"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Renta Variable")}
+                                    onChange={() => handleCategoryChange("Renta Variable")}
+                                  />
+                                  <label htmlFor="category-renta-variable" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Renta Variable
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-mixtos"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Mixtos")}
+                                    onChange={() => handleCategoryChange("Mixtos")}
+                                  />
+                                  <label htmlFor="category-mixtos" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Mixtos
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-monetario"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Monetario")}
+                                    onChange={() => handleCategoryChange("Monetario")}
+                                  />
+                                  <label htmlFor="category-monetario" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Monetario
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-gestion-alternativa"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Gestion Alternativa")}
+                                    onChange={() => handleCategoryChange("Gestion Alternativa")}
+                                  />
+                                  <label htmlFor="category-gestion-alternativa" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Gestion Alternativa
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-convertibles"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Convertibles")}
+                                    onChange={() => handleCategoryChange("Convertibles")}
+                                  />
+                                  <label htmlFor="category-convertibles" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Convertibles
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-inmobiliario"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Inmobiliario")}
+                                    onChange={() => handleCategoryChange("Inmobiliario")}
+                                  />
+                                  <label htmlFor="category-inmobiliario" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Inmobiliario
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-materias-primas"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Materias Primas")}
+                                    onChange={() => handleCategoryChange("Materias Primas")}
+                                  />
+                                  <label htmlFor="category-materias-primas" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Materias Primas
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-europa"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Europa")}
+                                    onChange={() => handleCategoryChange("Europa")}
+                                  />
+                                  <label htmlFor="category-europa" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Europa
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-global"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Global")}
+                                    onChange={() => handleCategoryChange("Global")}
+                                  />
+                                  <label htmlFor="category-global" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Global
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="category-estados-unidos"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedCategories.includes("Estados Unidos")}
+                                    onChange={() => handleCategoryChange("Estados Unidos")}
+                                  />
+                                  <label htmlFor="category-estados-unidos" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Estados Unidos
+                                  </label>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -661,30 +818,103 @@ export default function Home() {
                             className="flex justify-between items-center cursor-pointer py-1.5"
                             onClick={() => toggleSection('risk')}
                           >
-                            <h3 className="font-medium dark:text-white text-sm">Niveles de Riesgo</h3>
+                            <h3 className="font-medium dark:text-white text-sm">Riesgo</h3>
                             <button className="text-gray-500 dark:text-gray-400">
                               {expandedSections.risk ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </button>
                           </div>
                           <div className={`filter-content ${expandedSections.risk ? 'expanded' : ''}`}>
                             <div className="mt-1 pb-1 space-y-1.5">
-                              {Object.entries(filterCounts.riskLevels).map(([risk, count]) => (
-                                <div key={risk} className="flex items-center justify-between">
+                              {/* Fixed risk levels as per requirements */}
+                              <div className="flex items-center justify-between">
                                   <div className="flex items-center">
                                     <input
-                                      id={`risk-${risk}`}
+                                    id="risk-sin-valorar"
                                       type="checkbox"
                                       className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                                      checked={selectedRiskLevels.includes(risk as RiskLevel)}
-                                      onChange={() => handleRiskLevelChange(risk as RiskLevel)}
+                                    checked={selectedRiskLevels.includes("Sin valorar")}
+                                    onChange={() => handleRiskLevelChange("Sin valorar")}
                                     />
-                                    <label htmlFor={`risk-${risk}`} className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-                                      {risk}
+                                  <label htmlFor="risk-sin-valorar" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Sin valorar
                                     </label>
                                   </div>
-                                  {/* Count and percentage hidden but kept for future use */}
                                 </div>
-                              ))}
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="risk-bajo"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedRiskLevels.includes("Riesgo bajo")}
+                                    onChange={() => handleRiskLevelChange("Riesgo bajo")}
+                                  />
+                                  <label htmlFor="risk-bajo" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Riesgo bajo
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="risk-moderado"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedRiskLevels.includes("Riesgo moderado")}
+                                    onChange={() => handleRiskLevelChange("Riesgo moderado")}
+                                  />
+                                  <label htmlFor="risk-moderado" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Riesgo moderado
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="risk-medio-alto"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedRiskLevels.includes("Riesgo medio-alto")}
+                                    onChange={() => handleRiskLevelChange("Riesgo medio-alto")}
+                                  />
+                                  <label htmlFor="risk-medio-alto" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Riesgo medio-alto
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="risk-alto"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedRiskLevels.includes("Riesgo alto")}
+                                    onChange={() => handleRiskLevelChange("Riesgo alto")}
+                                  />
+                                  <label htmlFor="risk-alto" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Riesgo alto
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="risk-muy-alto"
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={selectedRiskLevels.includes("Riesgo muy alto")}
+                                    onChange={() => handleRiskLevelChange("Riesgo muy alto")}
+                                  />
+                                  <label htmlFor="risk-muy-alto" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Riesgo muy alto
+                                  </label>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -696,7 +926,7 @@ export default function Home() {
                               className="flex justify-between items-center cursor-pointer py-1.5"
                               onClick={() => toggleSection('currency')}
                             >
-                              <h3 className="font-medium dark:text-white text-sm">Divisas</h3>
+                              <h3 className="font-medium dark:text-white text-sm">Divisa</h3>
                               <button className="text-gray-500 dark:text-gray-400">
                                 {expandedSections.currency ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                               </button>
@@ -705,63 +935,51 @@ export default function Home() {
                               <div className="mt-1 pb-1 space-y-1.5">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center">
-                                    <button
-                                      className="ml-1.5 text-sm text-indigo-600 dark:text-indigo-400 underline"
-                                      onClick={() => {
-                                        // If no currencies are selected or not all currencies are selected, select all
-                                        // Otherwise, deselect all
-                                        const allCurrencies = Object.keys(filterCounts.currencies);
-                                        const allSelected = allCurrencies.length > 0 && 
-                                          allCurrencies.every(c => selectedCurrency.includes(c));
-                                        
-                                        if (allSelected) {
-                                          setSelectedCurrency([]);  // Empty array = no filter
-                                        } else {
-                                          setSelectedCurrency([]);  // Changed to empty array - meaning no filter
-                                        }
-                                      }}
-                                    >
-                                      Mostrar todas
-                                    </button>
+                                    <input
+                                      id="currency-todas"
+                                      type="radio"
+                                      name="currency-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={selectedCurrency.length === 0}
+                                      onChange={() => setSelectedCurrency([])}
+                                    />
+                                    <label htmlFor="currency-todas" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      Todas
+                                    </label>
                                   </div>
                                 </div>
                                 
-                                {selectedCurrency.length === 0 && (
-                                  <div className="text-xs text-green-600 dark:text-green-400 ml-1.5 mb-2">
-                                    Mostrando todos los fondos (sin filtrar por divisa)
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <input
+                                      id="currency-eur"
+                                      type="radio"
+                                      name="currency-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={selectedCurrency.length === 1 && selectedCurrency[0] === "EUR"}
+                                      onChange={() => setSelectedCurrency(["EUR"])}
+                                    />
+                                    <label htmlFor="currency-eur" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      EUR
+                                    </label>
                                   </div>
-                                )}
+                                </div>
                                 
-                                {Object.entries(filterCounts.currencies).map(([currency, count]) => (
-                                  <div key={currency} className="flex items-center justify-between">
+                                <div className="flex items-center justify-between">
                                     <div className="flex items-center">
                                       <input
-                                        id={`currency-${currency}`}
-                                        type="checkbox"
-                                        className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                                        checked={selectedCurrency.length > 0 && selectedCurrency.includes(currency)}
-                                        onChange={() => {
-                                          if (selectedCurrency.length === 0) {
-                                            // First selection - add only this currency
-                                            setSelectedCurrency([currency]);
-                                          } else if (selectedCurrency.includes(currency)) {
-                                            // If already selected, remove it
-                                            const newSelection = selectedCurrency.filter(c => c !== currency);
-                                            // If removing the last currency, clear the filter (show all)
-                                            setSelectedCurrency(newSelection.length === 0 ? [] : newSelection);
-                                          } else {
-                                            // Add this currency to selection
-                                            setSelectedCurrency([...selectedCurrency, currency]);
-                                          }
-                                        }}
-                                      />
-                                      <label htmlFor={`currency-${currency}`} className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-                                        {currency}
+                                      id="currency-usd"
+                                      type="radio"
+                                      name="currency-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={selectedCurrency.length === 1 && selectedCurrency[0] === "USD"}
+                                      onChange={() => setSelectedCurrency(["USD"])}
+                                    />
+                                    <label htmlFor="currency-usd" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      USD
                                       </label>
                                     </div>
-                                    {/* Count and percentage hidden but kept for future use */}
                                   </div>
-                                ))}
                               </div>
                             </div>
                           </div>
@@ -773,30 +991,60 @@ export default function Home() {
                             className="flex justify-between items-center cursor-pointer py-1.5"
                             onClick={() => toggleSection('focusList')}
                           >
-                            <h3 className="font-medium dark:text-white text-sm">Listas de Enfoque</h3>
+                            <h3 className="font-medium dark:text-white text-sm">Focus List</h3>
                             <button className="text-gray-500 dark:text-gray-400">
                               {expandedSections.focusList ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </button>
                           </div>
                           <div className={`filter-content ${expandedSections.focusList ? 'expanded' : ''}`}>
                             <div className="mt-1 pb-1 space-y-1.5">
-                              {Object.entries(filterCounts.focusList).map(([list, count]) => (
-                                <div key={list} className="flex items-center justify-between">
+                              <div className="flex items-center justify-between">
                                   <div className="flex items-center">
                                     <input
-                                      id={`list-${list}`}
-                                      type="checkbox"
-                                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                                      checked={focusListFilter === list}
-                                      onChange={() => setFocusListFilter(list as 'Sí' | 'No')}
-                                    />
-                                    <label htmlFor={`list-${list}`} className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-                                      {list}
+                                    id="focus-list-todos"
+                                    type="radio"
+                                    name="focus-list-filter"
+                                    className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={focusListFilter === 'Todos'}
+                                    onChange={() => setFocusListFilter('Todos')}
+                                  />
+                                  <label htmlFor="focus-list-todos" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Todos
                                     </label>
                                   </div>
-                                  {/* Count and percentage hidden but kept for future use */}
                                 </div>
-                              ))}
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="focus-list-si"
+                                    type="radio"
+                                    name="focus-list-filter"
+                                    className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={focusListFilter === 'Sí'}
+                                    onChange={() => setFocusListFilter('Sí')}
+                                  />
+                                  <label htmlFor="focus-list-si" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Sí
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="focus-list-no"
+                                    type="radio"
+                                    name="focus-list-filter"
+                                    className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={focusListFilter === 'No'}
+                                    onChange={() => setFocusListFilter('No')}
+                                  />
+                                  <label htmlFor="focus-list-no" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    No
+                                  </label>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -808,30 +1056,60 @@ export default function Home() {
                               className="flex justify-between items-center cursor-pointer py-1.5"
                               onClick={() => toggleSection('implicitAdvisory')}
                             >
-                              <h3 className="font-medium dark:text-white text-sm">Asesoramiento Implícito</h3>
+                              <h3 className="font-medium dark:text-white text-sm">Asesoramiento con cobro implícito</h3>
                               <button className="text-gray-500 dark:text-gray-400">
                                 {expandedSections.implicitAdvisory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                               </button>
                             </div>
                             <div className={`filter-content ${expandedSections.implicitAdvisory ? 'expanded' : ''}`}>
                               <div className="mt-1 pb-1 space-y-1.5">
-                                {Object.entries(filterCounts.implicitAdvisory).map(([value, count]) => (
-                                  <div key={value} className="flex items-center justify-between">
+                                <div className="flex items-center justify-between">
                                     <div className="flex items-center">
                                       <input
-                                        id={`implicit-${value}`}
-                                        type="checkbox"
-                                        className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                                        checked={implicitAdvisoryFilter === value}
-                                        onChange={() => setImplicitAdvisoryFilter(value as 'Sí' | 'No')}
-                                      />
-                                      <label htmlFor={`implicit-${value}`} className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-                                        {value}
+                                      id="implicit-advisory-todos"
+                                      type="radio"
+                                      name="implicit-advisory-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={implicitAdvisoryFilter === 'Todos'}
+                                      onChange={() => setImplicitAdvisoryFilter('Todos')}
+                                    />
+                                    <label htmlFor="implicit-advisory-todos" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      Todos
                                       </label>
                                     </div>
-                                    {/* Count and percentage hidden but kept for future use */}
                                   </div>
-                                ))}
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <input
+                                      id="implicit-advisory-si"
+                                      type="radio"
+                                      name="implicit-advisory-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={implicitAdvisoryFilter === 'Sí'}
+                                      onChange={() => setImplicitAdvisoryFilter('Sí')}
+                                    />
+                                    <label htmlFor="implicit-advisory-si" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      Sí
+                                    </label>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <input
+                                      id="implicit-advisory-no"
+                                      type="radio"
+                                      name="implicit-advisory-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={implicitAdvisoryFilter === 'No'}
+                                      onChange={() => setImplicitAdvisoryFilter('No')}
+                                    />
+                                    <label htmlFor="implicit-advisory-no" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      No
+                                    </label>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -844,30 +1122,60 @@ export default function Home() {
                               className="flex justify-between items-center cursor-pointer py-1.5"
                               onClick={() => toggleSection('explicitAdvisory')}
                             >
-                              <h3 className="font-medium dark:text-white text-sm">Asesoramiento Explícito</h3>
+                              <h3 className="font-medium dark:text-white text-sm">Asesoramiento con cobro explícito</h3>
                               <button className="text-gray-500 dark:text-gray-400">
                                 {expandedSections.explicitAdvisory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                               </button>
                             </div>
                             <div className={`filter-content ${expandedSections.explicitAdvisory ? 'expanded' : ''}`}>
                               <div className="mt-1 pb-1 space-y-1.5">
-                                {Object.entries(filterCounts.explicitAdvisory).map(([value, count]) => (
-                                  <div key={value} className="flex items-center justify-between">
+                                <div className="flex items-center justify-between">
                                     <div className="flex items-center">
                                       <input
-                                        id={`explicit-${value}`}
-                                        type="checkbox"
-                                        className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                                        checked={explicitAdvisoryFilter === value}
-                                        onChange={() => setExplicitAdvisoryFilter(value as 'Sí' | 'No')}
-                                      />
-                                      <label htmlFor={`explicit-${value}`} className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-                                        {value}
+                                      id="explicit-advisory-todos"
+                                      type="radio"
+                                      name="explicit-advisory-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={explicitAdvisoryFilter === 'Todos'}
+                                      onChange={() => setExplicitAdvisoryFilter('Todos')}
+                                    />
+                                    <label htmlFor="explicit-advisory-todos" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      Todos
                                       </label>
                                     </div>
-                                    {/* Count and percentage hidden but kept for future use */}
                                   </div>
-                                ))}
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <input
+                                      id="explicit-advisory-si"
+                                      type="radio"
+                                      name="explicit-advisory-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={explicitAdvisoryFilter === 'Sí'}
+                                      onChange={() => setExplicitAdvisoryFilter('Sí')}
+                                    />
+                                    <label htmlFor="explicit-advisory-si" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      Sí
+                                    </label>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <input
+                                      id="explicit-advisory-no"
+                                      type="radio"
+                                      name="explicit-advisory-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={explicitAdvisoryFilter === 'No'}
+                                      onChange={() => setExplicitAdvisoryFilter('No')}
+                                    />
+                                    <label htmlFor="explicit-advisory-no" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      No
+                                    </label>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -887,23 +1195,53 @@ export default function Home() {
                             </div>
                             <div className={`filter-content ${expandedSections.hedge ? 'expanded' : ''}`}>
                               <div className="mt-1 pb-1 space-y-1.5">
-                                {Object.entries(filterCounts.hedge).map(([value, count]) => (
-                                  <div key={value} className="flex items-center justify-between">
+                                <div className="flex items-center justify-between">
                                     <div className="flex items-center">
                                       <input
-                                        id={`hedge-${value}`}
-                                        type="checkbox"
-                                        className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                                        checked={hedgeFilter === value}
-                                        onChange={() => setHedgeFilter(value as 'Sí' | 'No')}
-                                      />
-                                      <label htmlFor={`hedge-${value}`} className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-                                        {value}
+                                      id="hedge-todos"
+                                      type="radio"
+                                      name="hedge-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={hedgeFilter === 'Todos'}
+                                      onChange={() => setHedgeFilter('Todos')}
+                                    />
+                                    <label htmlFor="hedge-todos" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      Todos
                                       </label>
                                     </div>
-                                    {/* Count and percentage hidden but kept for future use */}
                                   </div>
-                                ))}
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <input
+                                      id="hedge-si"
+                                      type="radio"
+                                      name="hedge-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={hedgeFilter === 'Sí'}
+                                      onChange={() => setHedgeFilter('Sí')}
+                                    />
+                                    <label htmlFor="hedge-si" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      Sí
+                                    </label>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <input
+                                      id="hedge-no"
+                                      type="radio"
+                                      name="hedge-filter"
+                                      className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                      checked={hedgeFilter === 'No'}
+                                      onChange={() => setHedgeFilter('No')}
+                                    />
+                                    <label htmlFor="hedge-no" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                      No
+                                    </label>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -915,30 +1253,60 @@ export default function Home() {
                             className="flex justify-between items-center cursor-pointer py-1.5"
                             onClick={() => toggleSection('dividendPolicy')}
                           >
-                            <h3 className="font-medium dark:text-white text-sm">Política de Dividendos</h3>
+                            <h3 className="font-medium dark:text-white text-sm">Política de dividendos</h3>
                             <button className="text-gray-500 dark:text-gray-400">
                               {expandedSections.dividendPolicy ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </button>
                           </div>
                           <div className={`filter-content ${expandedSections.dividendPolicy ? 'expanded' : ''}`}>
                             <div className="mt-1 pb-1 space-y-1.5">
-                              {Object.entries(filterCounts.dividendPolicy).map(([value, count]) => (
-                                <div key={value} className="flex items-center justify-between">
+                              <div className="flex items-center justify-between">
                                   <div className="flex items-center">
                                     <input
-                                      id={`dividend-${value}`}
-                                      type="checkbox"
-                                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                                      checked={dividendPolicyFilter === value}
-                                      onChange={() => setDividendPolicyFilter(value as 'Acumulación' | 'Distribución')}
-                                    />
-                                    <label htmlFor={`dividend-${value}`} className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-                                      {value}
+                                    id="dividend-policy-todos"
+                                    type="radio"
+                                    name="dividend-policy-filter"
+                                    className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={dividendPolicyFilter === 'Todos'}
+                                    onChange={() => setDividendPolicyFilter('Todos')}
+                                  />
+                                  <label htmlFor="dividend-policy-todos" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Todos
                                     </label>
                                   </div>
-                                  {/* Count and percentage hidden but kept for future use */}
                                 </div>
-                              ))}
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="dividend-policy-acumulacion"
+                                    type="radio"
+                                    name="dividend-policy-filter"
+                                    className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={dividendPolicyFilter === 'Acumulación'}
+                                    onChange={() => setDividendPolicyFilter('Acumulación')}
+                                  />
+                                  <label htmlFor="dividend-policy-acumulacion" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Acumulación
+                                  </label>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <input
+                                    id="dividend-policy-distribucion"
+                                    type="radio"
+                                    name="dividend-policy-filter"
+                                    className="h-3.5 w-3.5 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                                    checked={dividendPolicyFilter === 'Distribución'}
+                                    onChange={() => setDividendPolicyFilter('Distribución')}
+                                  />
+                                  <label htmlFor="dividend-policy-distribucion" className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    Distribución
+                                  </label>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1033,8 +1401,11 @@ export default function Home() {
                   <div className="w-full">
                     {selectedFunds.length > 0 ? (
                       <>
-                        <ReportGenerator selectedFunds={selectedFunds} />
-                        <div className="mt-6">
+                        {/* 1. Tabla de fondos seleccionados */}
+                        <div className="mb-6">
+                          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+                            Fondos Seleccionados
+                          </h2>
                           <FundTable 
                             isinSearch=""
                             selectedCategories={[]}
@@ -1049,6 +1420,72 @@ export default function Home() {
                             setAnalysisMode={setAnalysisMode}
                           />
                         </div>
+
+                        {/* 2. Gráficos y visualizaciones - solo mostrar si showCharts es true */}
+                        {showCharts && (
+                          <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                              Visualización de Datos
+                            </h2>
+                            {selectedFunds.length > 0 ? (
+                              <FundCharts funds={selectedFunds} />
+                            ) : (
+                              <div className="text-center p-8 text-gray-500 dark:text-gray-400">
+                                Seleccione fondos para visualizar gráficos comparativos.
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 3. Informe Rápido */}
+                        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center justify-between">
+                            <span>Resumen Comparativo</span>
+                            <button className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full">
+                              Actualizar
+                            </button>
+                          </h2>
+                          
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                              <thead>
+                                <tr className="bg-gray-50 dark:bg-gray-900">
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fondo</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rentabilidad 1 Año</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Riesgo</th>
+                                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comisión</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {selectedFunds.map((fund, index) => (
+                                  <tr key={fund.isin} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
+                                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{fund.name}</td>
+                                    <td className={`px-4 py-3 text-sm ${
+                                      fund.one_year_return > 15 ? 'text-green-600 dark:text-green-400' : 
+                                      fund.one_year_return < 0 ? 'text-red-600 dark:text-red-400' : 
+                                      'text-yellow-600 dark:text-yellow-400'
+                                    }`}>
+                                      {fund.one_year_return.toFixed(2)}%
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{fund.risk_level}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{fund.management_fee.toFixed(2)}%</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          
+                          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-300">
+                            <p className="font-medium mb-1">Nota:</p>
+                            <p>Este es un resumen simplificado. Para un análisis detallado, genere el informe completo.</p>
+                          </div>
+                        </div>
+
+                        {/* 4. Informe Extenso (ReportGenerator) */}
+                        <ReportGenerator 
+                          selectedFunds={selectedFunds} 
+                          onGenerateReport={handleGenerateReport} 
+                        />
                       </>
                     ) : (
                       <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
